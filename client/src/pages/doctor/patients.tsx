@@ -8,7 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   User,
   Link as LinkIcon,
-  Search
+  Search,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
