@@ -63,7 +63,7 @@ export function RequestAccessModal({ isOpen, onClose }: RequestAccessModalProps)
   // Fetch all patients for the search
   const { data: patients, isLoading: isLoadingPatients } = useQuery<UserType[]>({
     queryKey: ['/api/patients'],
-    enabled: isOpen, // Only fetch when modal is open
+    enabled: isOpen && !!user?.id, // Only fetch when modal is open and user is logged in
   });
 
   // Set up form with validation
