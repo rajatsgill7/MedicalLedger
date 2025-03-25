@@ -93,7 +93,7 @@ export default function DoctorPatients() {
           id: patient.id,
           fullName: patient.fullName,
           accessStatus,
-          recordCount: Math.floor(Math.random() * 20), // This would come from real data in production
+          recordCount: patient.recordCount || 0, // Use the actual record count from the API
           lastVisit: request.requestDate,
           accessUntil: request.expiryDate as string,
         });

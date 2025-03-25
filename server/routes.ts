@@ -217,15 +217,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const requests = await storage.getAccessRequestsByDoctorId(doctorId);
     
-    // For each request, fetch the patient's information
+    // For each request, fetch the patient's information and record count
     const requestsWithPatient = await Promise.all(requests.map(async (request) => {
       const patient = await storage.getUser(request.patientId);
+      // Get the patient's records count
+      const records = patient ? await storage.getRecordsByPatientId(patient.id) : [];
+      const recordCount = records.length;
+      
       return {
         ...request,
         patient: patient ? {
           id: patient.id,
           fullName: patient.fullName,
-          email: patient.email
+          email: patient.email,
+          recordCount
         } : null
       };
     }));
