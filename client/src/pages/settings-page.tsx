@@ -110,16 +110,33 @@ export default function SettingsPage() {
   // Profile update mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data: z.infer<typeof profileFormSchema>) => {
+      console.log('Sending profile update:', data);
       const res = await apiRequest("PATCH", `/api/users/${user?.id}`, data);
       return await res.json();
     },
     onSuccess: (updatedUser) => {
+      console.log('Received updated user:', updatedUser);
       toast({
         title: "Profile updated",
         description: "Your profile information has been updated successfully.",
       });
-      // Update the cache with the new user data
-      queryClient.setQueryData(['/api/user'], updatedUser);
+      
+      // Get current user from cache
+      const currentUser = queryClient.getQueryData<User>(['/api/user']);
+      if (currentUser) {
+        // Merge the updated user with current user to ensure we don't lose any fields
+        const mergedUser = {
+          ...currentUser,
+          ...updatedUser
+        };
+        console.log('Merged user data to save in cache:', mergedUser);
+        // Update the cache with the merged user data
+        queryClient.setQueryData(['/api/user'], mergedUser);
+      } else {
+        // If no current user in cache, just set the updated user
+        queryClient.setQueryData(['/api/user'], updatedUser);
+      }
+      
       // Also invalidate to ensure any future fetches are fresh
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     },
