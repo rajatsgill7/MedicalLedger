@@ -94,6 +94,36 @@ export default function DoctorMedicalRecords() {
     });
   };
 
+  // For patient name search, we need to fetch patient information for each record
+  const [patientNames, setPatientNames] = useState<{[key: number]: string}>({});
+
+  // Fetch patient names for displayed records, when needed for search
+  useEffect(() => {
+    if (records && patientNameSearch) {
+      // Get unique patient IDs
+      const patientIds = [...new Set(records.map(record => record.patientId))];
+      
+      // Fetch patient names for each unique ID that we don't already have
+      patientIds.forEach(patientId => {
+        if (!patientNames[patientId]) {
+          fetch(`/api/users/${patientId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.fullName) {
+                setPatientNames(prev => ({
+                  ...prev,
+                  [patientId]: data.fullName
+                }));
+              }
+            })
+            .catch(err => {
+              console.error("Error fetching patient details:", err);
+            });
+        }
+      });
+    }
+  }, [records, patientNameSearch]);
+
   // Filter records based on search and filters
   const filteredRecords = records?.filter(record => {
     // Patient ID filter
@@ -104,6 +134,11 @@ export default function DoctorMedicalRecords() {
       record.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       record.doctorName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       record.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Patient name filter
+    const patientName = patientNames[record.patientId] || "";
+    const matchesPatientName = !patientNameSearch || 
+      patientName.toLowerCase().includes(patientNameSearch.toLowerCase());
     
     // Record type filter
     const matchesType = !recordType || record.recordType === recordType;
@@ -124,7 +159,7 @@ export default function DoctorMedicalRecords() {
       matchesDate = new Date(record.recordDate) >= twelveMonthsAgo;
     }
     
-    return matchesPatientId && matchesSearch && matchesType && matchesDate;
+    return matchesPatientId && matchesSearch && matchesPatientName && matchesType && matchesDate;
   }) || [];
 
   return (
@@ -234,12 +269,12 @@ export default function DoctorMedicalRecords() {
             </div>
             <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No records found</h3>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              {patientIdFilter || searchTerm || recordType || dateRange !== "all" 
+              {patientIdFilter || searchTerm || patientNameSearch || recordType || dateRange !== "all" 
                 ? "Try adjusting your filters or search terms"
                 : "Upload a medical record or request access to patient records"
               }
             </p>
-            {!patientIdFilter && !searchTerm && !recordType && dateRange === "all" && (
+            {!patientIdFilter && !searchTerm && !patientNameSearch && !recordType && dateRange === "all" && (
               <Button
                 className="mt-4"
                 onClick={() => setUploadModalOpen(true)}
