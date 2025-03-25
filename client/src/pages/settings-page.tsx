@@ -100,10 +100,10 @@ export default function SettingsPage() {
   const notificationForm = useForm<z.infer<typeof notificationFormSchema>>({
     resolver: zodResolver(notificationFormSchema),
     defaultValues: {
-      emailNotifications: true,
-      smsNotifications: false,
-      accessRequestAlerts: true,
-      securityAlerts: true,
+      emailNotifications: user?.notificationPreferences?.emailNotifications ?? true,
+      smsNotifications: user?.notificationPreferences?.smsNotifications ?? false,
+      accessRequestAlerts: user?.notificationPreferences?.accessRequestAlerts ?? true,
+      securityAlerts: user?.notificationPreferences?.securityAlerts ?? true,
     },
   });
 
@@ -169,6 +169,8 @@ export default function SettingsPage() {
         title: "Notifications updated",
         description: "Your notification preferences have been updated.",
       });
+      // Invalidate the user query to refresh the user data with updated notification preferences
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     },
     onError: (error: Error) => {
       toast({

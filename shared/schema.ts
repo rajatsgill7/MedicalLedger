@@ -11,6 +11,14 @@ export const UserRole = {
 
 export type UserRoleType = typeof UserRole[keyof typeof UserRole];
 
+// Notification preferences type
+export type NotificationPreferences = {
+  emailNotifications?: boolean;
+  smsNotifications?: boolean;
+  accessRequestAlerts?: boolean;
+  securityAlerts?: boolean;
+};
+
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -21,6 +29,8 @@ export const users = pgTable("users", {
   role: text("role").notNull().default(UserRole.PATIENT),
   specialty: text("specialty"), // For doctors
   createdAt: timestamp("created_at").defaultNow(),
+  // For Postgres, we would use JSON type here, but for in-memory usage 
+  // we'll just manually manage the notificationPreferences as a property
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -101,7 +111,9 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).pick({
 });
 
 // Defining types for TypeScript
-export type User = typeof users.$inferSelect;
+export type User = typeof users.$inferSelect & {
+  notificationPreferences?: NotificationPreferences;
+};
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Record = typeof records.$inferSelect;

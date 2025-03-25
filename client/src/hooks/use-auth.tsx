@@ -9,6 +9,13 @@ import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
+export type NotificationPreferences = {
+  emailNotifications?: boolean;
+  smsNotifications?: boolean;
+  accessRequestAlerts?: boolean;
+  securityAlerts?: boolean;
+};
+
 export type User = {
   id: number;
   username: string;
@@ -16,6 +23,7 @@ export type User = {
   email: string;
   role: string;
   specialty?: string;
+  notificationPreferences?: NotificationPreferences;
 };
 
 type AuthContextType = {
