@@ -24,9 +24,10 @@ interface PatientProps {
   };
   onViewRecords: () => void;
   onAccessHistory?: () => void;
+  onRequestAccess?: () => void;
 }
 
-export function PatientCard({ patient, onViewRecords, onAccessHistory }: PatientProps) {
+export function PatientCard({ patient, onViewRecords, onAccessHistory, onRequestAccess }: PatientProps) {
   // Determine status badge styling
   const getStatusBadge = () => {
     switch (patient.accessStatus) {
@@ -61,7 +62,7 @@ export function PatientCard({ patient, onViewRecords, onAccessHistory }: Patient
         return (
           <Badge 
             variant="outline"
-            className="bg-info/10 border-info/20 text-info"
+            className="border border-blue-300 dark:border-blue-800 bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
           >
             No Access
           </Badge>
@@ -162,7 +163,7 @@ export function PatientCard({ patient, onViewRecords, onAccessHistory }: Patient
               variant="ghost"
               size="sm"
               className="text-primary hover:text-primary/90 hover:bg-background/80 font-medium mx-auto"
-              onClick={() => {}}
+              onClick={onRequestAccess}
             >
               <CheckCircle className="h-4 w-4 mr-1.5" />
               Request New Access
@@ -172,7 +173,7 @@ export function PatientCard({ patient, onViewRecords, onAccessHistory }: Patient
               variant="ghost"
               size="sm"
               className="text-primary hover:text-primary/90 hover:bg-background/80 font-medium mx-auto"
-              onClick={() => {}}
+              onClick={onRequestAccess}
             >
               <CheckCircle className="h-4 w-4 mr-1.5" />
               Request Access
