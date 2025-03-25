@@ -88,7 +88,19 @@ export default function DoctorMedicalRecords() {
 
   // Handler for downloading a record
   const handleDownloadRecord = (id: number) => {
-    // In a real app, this would trigger a file download
+    // Create a direct download link
+    const downloadUrl = `/api/records/${id}/download`;
+    
+    // Create a temporary link element
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `medical-record-${id}.txt`;
+    
+    // Append to the document, click it, and remove it
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
     toast({
       title: "Download started",
       description: "The medical record is being downloaded."
