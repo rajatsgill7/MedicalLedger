@@ -264,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch('/api/access-requests/:id', isAuthenticated, hasRole([UserRole.PATIENT, UserRole.ADMIN]), async (req, res) => {
+  app.patch('/api/access-requests/:id', isAuthenticated, async (req, res) => {
     const requestId = parseInt(req.params.id);
     if (isNaN(requestId)) {
       return res.status(400).json({ message: "Invalid request ID" });
@@ -277,8 +277,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const user = req.user;
     
-    // Only the patient who owns the request or an admin can update it
-    if (user.role === UserRole.PATIENT && accessRequest.patientId !== user.id) {
+    // Verify permissions: patient can only update their own requests,
+    // doctor can only update requests they made, admin can update any
+    if (
+      (user.role === UserRole.PATIENT && accessRequest.patientId !== user.id) ||
+      (user.role === UserRole.DOCTOR && accessRequest.doctorId !== user.id && user.role !== UserRole.ADMIN)
+    ) {
       return res.status(403).json({ message: "Access denied" });
     }
     
@@ -293,7 +297,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ? "access_approved" 
       : req.body.status === "denied" 
         ? "access_denied" 
-        : "access_updated";
+        : req.body.status === "revoked"
+          ? "access_revoked"
+          : "access_updated";
         
     await storage.createAuditLog({
       userId: user.id,
