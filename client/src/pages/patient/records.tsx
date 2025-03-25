@@ -126,10 +126,11 @@ export default function PatientRecords() {
 
   return (
     <MainLayout>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Medical Records</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">My Medical Records</h1>
         <Button 
-          className="mt-4 sm:mt-0"
+          className="mt-3 sm:mt-0"
+          size="sm"
           onClick={() => setUploadModalOpen(true)}
         >
           <Upload className="mr-2 h-4 w-4" />

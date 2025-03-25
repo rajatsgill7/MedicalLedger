@@ -120,18 +120,18 @@ export default function AuthPage() {
         <ThemeToggle />
       </div>
       
-      <div className="flex flex-1 items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-6xl flex">
+      <div className="flex flex-1 items-center justify-center px-3 sm:px-6 lg:px-8 py-4">
+        <div className="w-full max-w-6xl flex flex-col md:flex-row">
           {/* Left column - Auth forms */}
-          <Card className="w-full md:w-1/2 max-w-md mx-auto">
-            <CardContent className="p-6">
-              <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center">
-                  <Shield className="h-8 w-8 text-white" />
+          <Card className="w-full md:w-1/2 max-w-md mx-auto mb-6 md:mb-0">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex justify-center mb-4 sm:mb-6">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary flex items-center justify-center">
+                  <Shield className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
                 </div>
               </div>
               
-              <h1 className="text-2xl font-bold text-center mb-8">
+              <h1 className="text-xl sm:text-2xl font-bold text-center mb-6">
                 MediVault Secure Access
               </h1>
               
@@ -359,52 +359,52 @@ export default function AuthPage() {
           </Card>
           
           {/* Right column - Info section */}
-          <div className="hidden md:block md:w-1/2 p-8 bg-primary text-white rounded-r-lg">
+          <div className="hidden md:block md:w-1/2 p-6 bg-primary text-white rounded-lg md:rounded-l-none md:rounded-r-lg">
             <div className="h-full flex flex-col justify-center">
-              <h2 className="text-3xl font-bold mb-6">Secure Medical Record Management</h2>
+              <h2 className="text-2xl lg:text-3xl font-bold mb-4 lg:mb-6">Secure Medical Record Management</h2>
               
-              <div className="space-y-4">
+              <div className="space-y-3 lg:space-y-4">
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 h-6 w-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-bold">✓</span>
+                  <div className="flex-shrink-0 h-5 w-5 lg:h-6 lg:w-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-xs lg:text-sm font-bold">✓</span>
                   </div>
-                  <p>Store all your medical history in one secure location</p>
+                  <p className="text-sm lg:text-base">Store all your medical history in one secure location</p>
                 </div>
                 
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 h-6 w-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-bold">✓</span>
+                  <div className="flex-shrink-0 h-5 w-5 lg:h-6 lg:w-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-xs lg:text-sm font-bold">✓</span>
                   </div>
-                  <p>Grant controlled access to healthcare providers</p>
+                  <p className="text-sm lg:text-base">Grant controlled access to healthcare providers</p>
                 </div>
                 
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 h-6 w-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-bold">✓</span>
+                  <div className="flex-shrink-0 h-5 w-5 lg:h-6 lg:w-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-xs lg:text-sm font-bold">✓</span>
                   </div>
-                  <p>End-to-end encryption for maximum privacy</p>
+                  <p className="text-sm lg:text-base">End-to-end encryption for maximum privacy</p>
                 </div>
                 
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 h-6 w-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-bold">✓</span>
+                  <div className="flex-shrink-0 h-5 w-5 lg:h-6 lg:w-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-xs lg:text-sm font-bold">✓</span>
                   </div>
-                  <p>HIPAA and GDPR compliant data storage</p>
+                  <p className="text-sm lg:text-base">HIPAA and GDPR compliant data storage</p>
                 </div>
                 
                 <div className="flex items-start">
-                  <div className="flex-shrink-0 h-6 w-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-bold">✓</span>
+                  <div className="flex-shrink-0 h-5 w-5 lg:h-6 lg:w-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-xs lg:text-sm font-bold">✓</span>
                   </div>
-                  <p>Access your records anytime, anywhere</p>
+                  <p className="text-sm lg:text-base">Access your records anytime, anywhere</p>
                 </div>
               </div>
               
-              <div className="mt-8 bg-white bg-opacity-10 p-4 rounded-lg">
-                <p className="italic">
+              <div className="mt-6 lg:mt-8 bg-white bg-opacity-10 p-3 lg:p-4 rounded-lg">
+                <p className="italic text-sm lg:text-base">
                   "MediVault has transformed how I manage my medical data. Having my records at my fingertips gives me peace of mind."
                 </p>
-                <p className="mt-2 font-medium">— Sarah J., Patient</p>
+                <p className="mt-2 font-medium text-sm lg:text-base">— Sarah J., Patient</p>
               </div>
             </div>
           </div>
