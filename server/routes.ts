@@ -44,6 +44,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(sanitizedUsers);
   });
   
+  // Get user by ID
+  app.get('/api/users/:userId', isAuthenticated, async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    const user = req.user;
+    
+    // Users can only access their own data unless they're a doctor accessing patient data 
+    // or an admin who can access any user data
+    if (
+      userId !== user.id && 
+      !(user.role === UserRole.DOCTOR && await storage.hasAccess(user.id, userId)) &&
+      user.role !== UserRole.ADMIN
+    ) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    
+    const userData = await storage.getUser(userId);
+    if (!userData) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Remove password from the response
+    const { password, ...userWithoutPassword } = userData;
+    
+    res.json(userWithoutPassword);
+  });
+  
   app.get('/api/doctors', isAuthenticated, async (req, res) => {
     const doctors = await storage.getDoctors();
     // Don't send passwords to client

@@ -44,7 +44,8 @@ export default function DoctorMedicalRecords() {
   const [dateRange, setDateRange] = useState<string>("all");
   const [patientName, setPatientName] = useState<string>("");
   const [isBackToPatients, setIsBackToPatients] = useState<boolean>(false);
-  const [location, navigate] = useRoute("/patients/:patientId/records");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, navigate] = useRoute("*");
   
   // If we have a patient ID in the URL, use it to filter records
   useEffect(() => {
