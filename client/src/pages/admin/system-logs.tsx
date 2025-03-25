@@ -153,24 +153,29 @@ export default function AdminSystemLogs() {
     if (timeRange === "today") {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      matchesTime = new Date(log.timestamp) >= today;
+      const logDate = log.timestamp ? new Date(log.timestamp) : null;
+      matchesTime = logDate ? logDate >= today : false;
     } else if (timeRange === "week") {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      matchesTime = new Date(log.timestamp) >= weekAgo;
+      const logDate = log.timestamp ? new Date(log.timestamp) : null;
+      matchesTime = logDate ? logDate >= weekAgo : false;
     } else if (timeRange === "month") {
       const monthAgo = new Date();
       monthAgo.setMonth(monthAgo.getMonth() - 1);
-      matchesTime = new Date(log.timestamp) >= monthAgo;
+      const logDate = log.timestamp ? new Date(log.timestamp) : null;
+      matchesTime = logDate ? logDate >= monthAgo : false;
     }
     
     return matchesSearch && matchesAction && matchesTime;
   }) || [];
 
   // Sort logs by timestamp (newest first)
-  const sortedLogs = [...filteredLogs].sort((a, b) => 
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
+  const sortedLogs = [...filteredLogs].sort((a, b) => {
+    const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
+    const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+    return dateB.getTime() - dateA.getTime();
+  });
 
   // Paginate logs
   const totalPages = Math.ceil(sortedLogs.length / itemsPerPage);
@@ -381,11 +386,18 @@ export default function AdminSystemLogs() {
                 ))
               ) : paginatedLogs.length > 0 ? (
                 paginatedLogs.map((log, index) => (
-                  <TableRow key={index}>
+                  <TableRow 
+                    key={index}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    onClick={() => {
+                      setSelectedLog(log);
+                      setIsDetailDialogOpen(true);
+                    }}
+                  >
                     <TableCell>
                       <div>
-                        <div className="font-medium">{formatDate(log.timestamp)}</div>
-                        <div className="text-xs text-gray-500">{formatTime(log.timestamp)}</div>
+                        <div className="font-medium">{log.timestamp ? formatDate(log.timestamp) : 'Unknown date'}</div>
+                        <div className="text-xs text-gray-500">{log.timestamp ? formatTime(log.timestamp) : 'Unknown time'}</div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -540,6 +552,148 @@ export default function AdminSystemLogs() {
           </div>
         </div>
       </div>
+
+      {/* Log Details Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 flex items-center justify-center mr-2">
+                {getActionIcon(selectedLog?.action || 'unknown')}
+              </div>
+              <span>Log Details: {formatActionLabel(selectedLog?.action || 'unknown')}</span>
+            </DialogTitle>
+            <DialogDescription>
+              Timestamp: {selectedLog?.timestamp ? formatDate(selectedLog.timestamp) + ' at ' + formatTime(selectedLog.timestamp) : 'Unknown'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-4">
+            <Card>
+              <CardContent className="p-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center">
+                  <User className="h-4 w-4 mr-2" />
+                  User Information
+                </h3>
+                {selectedLog?.user ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                          {selectedLog.user.fullName.split(" ").map(n => n[0]).join("")}
+                        </span>
+                      </div>
+                      <div className="ml-3">
+                        <div className="font-medium">{selectedLog.user.fullName}</div>
+                        <div className="text-sm text-gray-500">@{selectedLog.user.username}</div>
+                      </div>
+                    </div>
+                    <div className="pt-2">
+                      <div className="grid grid-cols-3 text-sm">
+                        <span className="text-gray-500">User ID:</span>
+                        <span className="col-span-2 font-mono">{selectedLog.user.id}</span>
+                      </div>
+                      <div className="grid grid-cols-3 text-sm mt-1">
+                        <span className="text-gray-500">Role:</span>
+                        <span className="col-span-2">
+                          <Badge variant="outline" className={`${getRoleBadgeColor(selectedLog.user.role)}`}>
+                            {selectedLog.user.role}
+                          </Badge>
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 text-sm mt-1">
+                        <span className="text-gray-500">Email:</span>
+                        <span className="col-span-2">{selectedLog.user.email}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-gray-500 italic">
+                    User information not available (User ID: {selectedLog?.userId || 'Unknown'})
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center">
+                  <Globe className="h-4 w-4 mr-2" />
+                  Connection Details
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="grid grid-cols-3">
+                    <span className="text-gray-500">IP Address:</span>
+                    <span className="col-span-2 font-mono">{selectedLog?.ipAddress || 'Unknown'}</span>
+                  </div>
+                  <div className="grid grid-cols-3">
+                    <span className="text-gray-500">User Agent:</span>
+                    <span className="col-span-2 text-xs">{selectedLog?.userAgent || 'Unknown'}</span>
+                  </div>
+                  <div className="grid grid-cols-3">
+                    <span className="text-gray-500">Session ID:</span>
+                    <span className="col-span-2 font-mono text-xs">{selectedLog?.sessionId || 'Unknown'}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="md:col-span-2">
+              <CardContent className="p-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center">
+                  <Info className="h-4 w-4 mr-2" />
+                  Event Details
+                </h3>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 text-sm">
+                    <span className="text-gray-500 lg:col-span-1">Action:</span>
+                    <span className="lg:col-span-3">
+                      <Badge 
+                        variant="outline"
+                        className={`flex items-center inline-flex ${getActionBadgeColor(selectedLog?.action || '')}`}
+                      >
+                        {getActionIcon(selectedLog?.action || '')}
+                        <span className="ml-1">{formatActionLabel(selectedLog?.action || '')}</span>
+                      </Badge>
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-4 text-sm mt-2">
+                    <span className="text-gray-500 lg:col-span-1">Timestamp:</span>
+                    <span className="lg:col-span-3">{selectedLog?.timestamp ? formatDate(selectedLog.timestamp) + ' at ' + formatTime(selectedLog.timestamp) : 'Unknown'}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-4 text-sm mt-2">
+                    <span className="text-gray-500 lg:col-span-1">Details:</span>
+                    <div className="lg:col-span-3 bg-gray-50 dark:bg-gray-800 p-3 rounded-md mt-1 whitespace-pre-wrap">
+                      {selectedLog?.details || 'No additional details available'}
+                    </div>
+                  </div>
+                  
+                  {selectedLog?.metadata && Object.keys(selectedLog.metadata).length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-4 text-sm mt-3">
+                      <span className="text-gray-500 lg:col-span-1">Metadata:</span>
+                      <div className="lg:col-span-3 bg-gray-50 dark:bg-gray-800 p-3 rounded-md mt-1 font-mono text-xs overflow-x-auto">
+                        <pre>{JSON.stringify(selectedLog.metadata, null, 2)}</pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDetailDialogOpen(false)}
+              className="mr-2"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
