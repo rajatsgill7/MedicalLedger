@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getRoleBadgeColor } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -109,8 +109,12 @@ type LogWithUser = AuditLog & {
     id: number;
     username: string;
     fullName: string;
+    email?: string;
     role: string;
-  }
+  };
+  userAgent?: string;
+  sessionId?: string;
+  metadata?: Record<string, any>;
 };
 
 export default function AdminSystemLogs() {
@@ -396,7 +400,7 @@ export default function AdminSystemLogs() {
                   >
                     <TableCell>
                       <div>
-                        <div className="font-medium">{log.timestamp ? formatDate(log.timestamp) : 'Unknown date'}</div>
+                        <div className="font-medium">{log.timestamp ? formatDate(new Date(log.timestamp)) : 'Unknown date'}</div>
                         <div className="text-xs text-gray-500">{log.timestamp ? formatTime(log.timestamp) : 'Unknown time'}</div>
                       </div>
                     </TableCell>
@@ -564,7 +568,7 @@ export default function AdminSystemLogs() {
               <span>Log Details: {formatActionLabel(selectedLog?.action || 'unknown')}</span>
             </DialogTitle>
             <DialogDescription>
-              Timestamp: {selectedLog?.timestamp ? formatDate(selectedLog.timestamp) + ' at ' + formatTime(selectedLog.timestamp) : 'Unknown'}
+              Timestamp: {selectedLog?.timestamp ? formatDate(new Date(selectedLog.timestamp)) + ' at ' + formatTime(selectedLog.timestamp) : 'Unknown'}
             </DialogDescription>
           </DialogHeader>
           
@@ -660,7 +664,7 @@ export default function AdminSystemLogs() {
                   
                   <div className="grid grid-cols-1 lg:grid-cols-4 text-sm mt-2">
                     <span className="text-gray-500 lg:col-span-1">Timestamp:</span>
-                    <span className="lg:col-span-3">{selectedLog?.timestamp ? formatDate(selectedLog.timestamp) + ' at ' + formatTime(selectedLog.timestamp) : 'Unknown'}</span>
+                    <span className="lg:col-span-3">{selectedLog?.timestamp ? formatDate(new Date(selectedLog.timestamp)) + ' at ' + formatTime(selectedLog.timestamp) : 'Unknown'}</span>
                   </div>
                   
                   <div className="grid grid-cols-1 lg:grid-cols-4 text-sm mt-2">
