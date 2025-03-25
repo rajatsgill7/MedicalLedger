@@ -23,6 +23,7 @@ export type User = {
   email: string;
   role: string;
   specialty?: string;
+  phone?: string;
   notificationPreferences?: NotificationPreferences;
 };
 

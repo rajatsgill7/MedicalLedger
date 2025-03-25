@@ -28,6 +28,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   role: text("role").notNull().default(UserRole.PATIENT),
   specialty: text("specialty"), // For doctors
+  phone: text("phone"), // Phone number
   createdAt: timestamp("created_at").defaultNow(),
   notificationPreferences: text("notification_preferences"), // Stored as JSON string
 });
@@ -39,6 +40,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   role: true,
   specialty: true,
+  phone: true,
 });
 
 // Records table

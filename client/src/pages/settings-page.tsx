@@ -82,7 +82,7 @@ export default function SettingsPage() {
       fullName: user?.fullName || "",
       email: user?.email || "",
       specialty: user?.specialty || "",
-      phone: "",
+      phone: user?.phone || "",
     },
   });
 
