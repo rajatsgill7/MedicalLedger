@@ -73,6 +73,12 @@ export default function DoctorPatients() {
         }
       } else if (request.status === "pending") {
         accessStatus = "pending";
+      } else if (request.status === "revoked") {
+        // Don't show revoked requests at all - remove from display
+        // If there's an existing status for this patient, keep it instead
+        if (existingPatient) return;
+        accessStatus = "none";
+        return; // Skip adding this patient if access was revoked
       }
       
       // Only update if the new status is "better" than existing

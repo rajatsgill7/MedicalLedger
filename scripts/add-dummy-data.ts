@@ -94,10 +94,22 @@ async function main() {
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
     const twoMonthsAgo = new Date(today);
     twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+    const threeMonthsAgo = new Date(today);
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const sixMonthsAgo = new Date(today);
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const oneYearAgo = new Date(today);
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    
+    // Record types
+    const recordTypes = [
+      'Examination', 'Laboratory', 'Immunization', 'Prescription', 
+      'Surgical', 'Radiology', 'Consultation', 'Emergency', 'Discharge'
+    ];
     
     // Create records for each patient
     for (const patient of patients) {
-      // Each patient gets 3 records, one from each doctor
+      // Basic records - each patient gets these
       await storage.createRecord({
         title: 'Annual Physical Examination',
         patientId: patient.id,
@@ -111,7 +123,7 @@ async function main() {
       });
       
       await storage.createRecord({
-        title: 'Blood Test Results',
+        title: 'Complete Blood Count',
         patientId: patient.id,
         recordType: 'Laboratory',
         recordDate: oneMonthAgo.toISOString().split('T')[0],
@@ -123,7 +135,7 @@ async function main() {
       });
       
       await storage.createRecord({
-        title: 'Vaccination Record',
+        title: 'Annual Flu Vaccination',
         patientId: patient.id,
         recordType: 'Immunization',
         recordDate: twoMonthsAgo.toISOString().split('T')[0],
@@ -133,6 +145,123 @@ async function main() {
         fileUrl: null,
         verified: true
       });
+      
+      // Patient 1 - Additional records for Sarah Wilson
+      if (patient.id === patients[0].id) {
+        await storage.createRecord({
+          title: 'Chest X-Ray Results',
+          patientId: patient.id,
+          recordType: 'Radiology',
+          recordDate: threeMonthsAgo.toISOString().split('T')[0],
+          doctorId: doctors[0].id,
+          doctorName: doctors[0].fullName,
+          notes: 'Chest X-ray shows normal lung fields. No evidence of active disease.',
+          fileUrl: 'https://example.com/xray123',
+          verified: true
+        });
+        
+        await storage.createRecord({
+          title: 'Cardiac Consultation',
+          patientId: patient.id,
+          recordType: 'Consultation',
+          recordDate: sixMonthsAgo.toISOString().split('T')[0],
+          doctorId: doctors[0].id,
+          doctorName: doctors[0].fullName,
+          notes: 'Patient referred for preventive cardiac screening. EKG normal, stress test within normal limits.',
+          fileUrl: null,
+          verified: true
+        });
+        
+        await storage.createRecord({
+          title: 'Lipid Panel Results',
+          patientId: patient.id,
+          recordType: 'Laboratory',
+          recordDate: oneYearAgo.toISOString().split('T')[0],
+          doctorId: doctors[0].id,
+          doctorName: doctors[0].fullName,
+          notes: 'Cholesterol: 185 mg/dL (desirable), HDL: 62 mg/dL (good), LDL: 100 mg/dL (optimal), Triglycerides: 120 mg/dL (normal).',
+          fileUrl: null,
+          verified: true
+        });
+      }
+      
+      // Patient 2 - Additional records for Michael Chen
+      if (patient.id === patients[1].id) {
+        await storage.createRecord({
+          title: 'Allergy Test Results',
+          patientId: patient.id,
+          recordType: 'Laboratory',
+          recordDate: threeMonthsAgo.toISOString().split('T')[0],
+          doctorId: doctors[1].id,
+          doctorName: doctors[1].fullName,
+          notes: 'Patient shows mild allergic reaction to specific tree pollens. Recommend seasonal antihistamines.',
+          fileUrl: null,
+          verified: true
+        });
+        
+        await storage.createRecord({
+          title: 'Dermatology Consultation',
+          patientId: patient.id,
+          recordType: 'Consultation',
+          recordDate: sixMonthsAgo.toISOString().split('T')[0],
+          doctorId: doctors[1].id,
+          doctorName: doctors[1].fullName,
+          notes: 'Patient presented with mild eczema on hands. Prescribed topical corticosteroid cream.',
+          fileUrl: 'https://example.com/derm456',
+          verified: true
+        });
+        
+        await storage.createRecord({
+          title: 'COVID-19 Vaccination',
+          patientId: patient.id,
+          recordType: 'Immunization',
+          recordDate: oneYearAgo.toISOString().split('T')[0],
+          doctorId: doctors[1].id,
+          doctorName: doctors[1].fullName,
+          notes: 'Patient received COVID-19 booster vaccination. No adverse reactions observed during 15-minute observation.',
+          fileUrl: null,
+          verified: true
+        });
+      }
+      
+      // Patient 3 - Additional records for Emma Rodriguez
+      if (patient.id === patients[2].id) {
+        await storage.createRecord({
+          title: 'Prenatal Checkup',
+          patientId: patient.id,
+          recordType: 'Examination',
+          recordDate: threeMonthsAgo.toISOString().split('T')[0],
+          doctorId: doctors[2].id,
+          doctorName: doctors[2].fullName,
+          notes: 'Routine 20-week prenatal visit. Fetal development normal. All measurements within expected range.',
+          fileUrl: null,
+          verified: true
+        });
+        
+        await storage.createRecord({
+          title: 'Ultrasound Results',
+          patientId: patient.id,
+          recordType: 'Radiology',
+          recordDate: sixMonthsAgo.toISOString().split('T')[0],
+          doctorId: doctors[2].id,
+          doctorName: doctors[2].fullName,
+          notes: 'Obstetric ultrasound confirms single viable pregnancy. Estimated due date remains consistent with previous calculations.',
+          fileUrl: 'https://example.com/ultrasound789',
+          verified: true
+        });
+        
+        await storage.createRecord({
+          title: 'Glucose Tolerance Test',
+          patientId: patient.id,
+          recordType: 'Laboratory',
+          recordDate: oneYearAgo.toISOString().split('T')[0],
+          doctorId: doctors[2].id, 
+          doctorName: doctors[2].fullName,
+          notes: 'Standard glucose tolerance test performed. Results indicate normal glucose metabolism. No signs of gestational diabetes.',
+          fileUrl: null,
+          verified: true
+        });
+      }
     }
     
     console.log('Created medical records for patients');
