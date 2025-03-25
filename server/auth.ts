@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, UserRole } from "@shared/schema";
 
+
 declare global {
   namespace Express {
     interface User extends SelectUser {}
@@ -23,6 +24,11 @@ export async function hashPassword(password: string) {
 
 export async function comparePasswords(supplied: string, stored: string) {
   const [hashed, salt] = stored.split(".");
+
+  if (!hashed || !salt) {
+    throw new Error("Invalid stored password format");
+  }
+
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
@@ -48,41 +54,46 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
-      const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) {
-        return done(null, false);
-      } else {
-        return done(null, user);
+      try {
+        const user = await storage.getUserByUsername(username);
+        if (!user || !(await comparePasswords(password, user.password))) {
+          return done(null, false);
+        } else {
+          return done(null, user);
+        }
+      } catch (err) {
+        return done(err);
       }
-    }),
+    })
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
-    const user = await storage.getUser(id);
-    done(null, user);
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (err) {
+      done(err);
+    }
   });
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      // Check if username or email already exists
       const existingUsername = await storage.getUserByUsername(req.body.username);
       if (existingUsername) {
         return res.status(400).send("Username already exists");
       }
-      
+
       const existingEmail = await storage.getUserByEmail(req.body.email);
       if (existingEmail) {
         return res.status(400).send("Email already exists");
       }
 
-      // Create new user with hashed password
       const user = await storage.createUser({
         ...req.body,
         password: await hashPassword(req.body.password),
       });
 
-      // Log the registration
       await storage.createAuditLog({
         userId: user.id,
         action: "user_registered",
@@ -90,7 +101,6 @@ export function setupAuth(app: Express) {
         ipAddress: req.ip
       });
 
-      // Log in the newly registered user
       req.login(user, (err) => {
         if (err) return next(err);
         res.status(201).json({
@@ -111,18 +121,17 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", async (err: Error, user: SelectUser) => {
       if (err) return next(err);
       if (!user) return res.status(401).send("Invalid username or password");
-      
+
       req.login(user, async (loginErr) => {
         if (loginErr) return next(loginErr);
-        
-        // Log the login
+
         await storage.createAuditLog({
           userId: user.id,
           action: "user_login",
           details: `User logged in with role: ${user.role}`,
           ipAddress: req.ip
         });
-        
+
         return res.status(200).json({
           id: user.id,
           username: user.username,
@@ -138,7 +147,7 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", async (req, res, next) => {
     if (req.user) {
       const userId = req.user.id;
-      
+
       await storage.createAuditLog({
         userId,
         action: "user_logout",
@@ -146,7 +155,7 @@ export function setupAuth(app: Express) {
         ipAddress: req.ip
       });
     }
-    
+
     req.logout((err) => {
       if (err) return next(err);
       res.sendStatus(200);
@@ -155,8 +164,7 @@ export function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    // Don't send password to client
+
     const { password, ...user } = req.user;
     console.log('Current user in session:', user);
     res.json(user);

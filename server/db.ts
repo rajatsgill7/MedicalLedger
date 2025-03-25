@@ -1,15 +1,14 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import pkg from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
+// Destructure Pool from CommonJS-style default import
+const { Pool } = pkg;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+// Set up your PostgreSQL pool connection
+export const pool = new Pool({
+  connectionString: "postgres://postgres:911gt3RS@0.0.0.0:5432/medivault",
+});
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+// Initialize Drizzle with your pool and schema
+export const db = drizzle(pool, { schema });
