@@ -127,6 +127,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(record);
   });
   
+  // Download a medical record
+  app.get('/api/records/:id/download', isAuthenticated, async (req, res) => {
+    const recordId = parseInt(req.params.id);
+    if (isNaN(recordId)) {
+      return res.status(400).json({ message: "Invalid record ID" });
+    }
+    
+    const record = await storage.getRecord(recordId);
+    if (!record) {
+      return res.status(404).json({ message: "Record not found" });
+    }
+    
+    const user = req.user;
+    
+    // Check if user has access to this record
+    if (
+      user.role === UserRole.PATIENT && record.patientId !== user.id ||
+      user.role === UserRole.DOCTOR && record.patientId !== user.id && 
+      !(await storage.hasAccess(user.id, record.patientId))
+    ) {
+      return res.status(403).json({ message: "Access denied to this record" });
+    }
+    
+    // Log the record download
+    await storage.createAuditLog({
+      userId: user.id,
+      action: "record_downloaded",
+      details: `User downloaded record ${recordId}`,
+      ipAddress: req.ip
+    });
+    
+    // In a real application, this would stream the file for download
+    // For this demo, we'll generate a simple text file with the record data
+    const recordData = `
+Medical Record: ${record.title}
+Date: ${record.recordDate}
+Type: ${record.recordType}
+Doctor: ${record.doctorName || "Not specified"}
+Patient ID: ${record.patientId}
+Notes: ${record.notes || "None"}
+Verified: ${record.verified ? "Yes" : "No"}
+    `;
+    
+    // Set headers for file download
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename="medical-record-${recordId}.txt"`);
+    
+    // Send the file data
+    res.send(recordData);
+  });
+  
   app.get('/api/patients/:patientId/records', isAuthenticated, async (req, res) => {
     const patientId = parseInt(req.params.patientId);
     if (isNaN(patientId)) {
