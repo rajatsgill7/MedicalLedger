@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { MainLayout } from "@/components/layout/main-layout";
 import { useToast } from "@/hooks/use-toast";
 import { User, UserRole } from "@shared/schema";
@@ -12,7 +12,9 @@ import {
   Users,
   UserCog,
   Folder,
-  AlertTriangle
+  AlertTriangle,
+  Save,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getRoleBadgeColor, formatDate } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Table,
   TableBody,
@@ -28,6 +31,32 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import {
   Pagination,
   PaginationContent,
@@ -38,15 +67,83 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
+// Define edit user form schema 
+const editUserSchema = z.object({
+  fullName: z.string().min(3, "Full name must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email"),
+  specialty: z.string().optional(),
+  phone: z.string().optional(),
+  role: z.string(),
+});
+
+type EditUserFormValues = z.infer<typeof editUserSchema>;
+
 export default function AdminUserManagement() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const itemsPerPage = 10;
 
   // Fetch all users
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ['/api/users'],
+  });
+
+  // Setup form for editing user
+  const editForm = useForm<EditUserFormValues>({
+    resolver: zodResolver(editUserSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      specialty: "",
+      phone: "",
+      role: "",
+    },
+  });
+
+  // Update form values when editing user changes
+  React.useEffect(() => {
+    if (editingUser) {
+      editForm.reset({
+        fullName: editingUser.fullName,
+        email: editingUser.email,
+        specialty: editingUser.specialty || "",
+        phone: editingUser.phone || "",
+        role: editingUser.role,
+      });
+    }
+  }, [editingUser, editForm]);
+
+  // Mutation for updating user
+  const updateUserMutation = useMutation({
+    mutationFn: async (data: EditUserFormValues & { id: number }) => {
+      const { id, ...userData } = data;
+      const res = await apiRequest("PATCH", `/api/users/${id}`, userData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User updated",
+        description: "User details have been successfully updated",
+        variant: "success",
+      });
+      
+      // Close modal and reset form
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+      
+      // Refetch user data to update UI
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // Filter users based on search term
@@ -66,11 +163,21 @@ export default function AdminUserManagement() {
 
   // Handler for editing a user
   const handleEditUser = (userId: number) => {
-    // In a real app, this would open an edit modal
-    toast({
-      title: "Edit user",
-      description: `Editing user with ID: ${userId}`
-    });
+    const user = users?.find(u => u.id === userId);
+    if (user) {
+      setEditingUser(user);
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  // Handler for saving user edits
+  const handleSaveUserEdit = (values: EditUserFormValues) => {
+    if (editingUser) {
+      updateUserMutation.mutate({
+        id: editingUser.id,
+        ...values,
+      });
+    }
   };
 
   // Handler for adding a new user
