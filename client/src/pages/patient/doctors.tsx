@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { MainLayout } from "@/components/layout/main-layout";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function PatientDoctors() {
   const { user } = useAuth();
@@ -37,15 +38,46 @@ export default function PatientDoctors() {
   // Filter doctors who have approved access
   const doctorsWithAccess = accessRequests?.filter(
     req => req.status === "approved" && 
-    new Date(req.expiryDate as string) > new Date()
+    (req.expiryDate ? new Date(req.expiryDate) > new Date() : true)
   ) || [];
+
+  // Mutation for revoking access
+  const revokeAccessMutation = useMutation({
+    mutationFn: async (requestId: number) => {
+      const res = await apiRequest("PATCH", `/api/access-requests/${requestId}`, {
+        status: "revoked"
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      // Invalidate the queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: [`/api/access-requests/patient/${user?.id}`] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to revoke access. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Handler for revoking access
   const handleRevokeAccess = (requestId: number, doctorName: string) => {
-    // In a real app, this would make an API call to update the request status
+    // Show a loading toast
     toast({
-      title: "Access revoked",
-      description: `You have revoked access for Dr. ${doctorName}`
+      title: "Revoking access...",
+      description: `Revoking access for ${doctorName}`,
+    });
+    
+    // Call the mutation to revoke access
+    revokeAccessMutation.mutate(requestId, {
+      onSuccess: () => {
+        toast({
+          title: "Access revoked",
+          description: `You have revoked access for ${doctorName}`
+        });
+      }
     });
   };
 
@@ -160,9 +192,19 @@ export default function PatientDoctors() {
                       request.id, 
                       request.doctor?.fullName || `Doctor #${request.doctorId}`
                     )}
+                    disabled={revokeAccessMutation.isPending}
                   >
-                    <UserX className="mr-2 h-4 w-4" />
-                    Revoke Access
+                    {revokeAccessMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Revoking...
+                      </>
+                    ) : (
+                      <>
+                        <UserX className="mr-2 h-4 w-4" />
+                        Revoke Access
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
