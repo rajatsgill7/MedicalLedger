@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useRole } from "@/hooks/use-role";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Shield, Menu, ChevronDown } from "lucide-react";
 import {
@@ -48,8 +47,6 @@ export function Header() {
           </div>
 
           <div className="flex items-center space-x-3">
-            <ThemeToggle />
-
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

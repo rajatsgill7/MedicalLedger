@@ -13,12 +13,14 @@ import {
   ShieldAlert,
   ClipboardList,
   Key,
-  Shield 
+  Shield,
+  Palette
 } from "lucide-react";
 import { useRole } from "@/hooks/use-role";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Sidebar() {
   const [location, setLocation] = useLocation();
