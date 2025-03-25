@@ -64,7 +64,19 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    if (!user) return undefined;
+    
+    // Get saved notification preferences from session or other source in the future
+    // For now we'll set some default notification preferences
+    return {
+      ...user,
+      notificationPreferences: {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      }
+    };
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -72,7 +84,20 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(eq(users.username, username));
-    return user;
+    
+    if (!user) return undefined;
+    
+    // Get saved notification preferences from session or other source in the future
+    // For now we'll set some default notification preferences
+    return {
+      ...user,
+      notificationPreferences: {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      }
+    };
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -80,7 +105,20 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(eq(users.email, email));
-    return user;
+    
+    if (!user) return undefined;
+    
+    // Get saved notification preferences from session or other source in the future
+    // For now we'll set some default notification preferences
+    return {
+      ...user,
+      notificationPreferences: {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      }
+    };
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -98,7 +136,17 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date()
       })
       .returning();
-    return user;
+      
+    // Add default notification preferences to the returned user object
+    return {
+      ...user,
+      notificationPreferences: {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      }
+    };
   }
   
   async updateUser(id: number, update: Partial<User>): Promise<User | undefined> {
