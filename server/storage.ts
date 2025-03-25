@@ -6,8 +6,13 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { eq, and, desc } from "drizzle-orm";
+import { pool } from "./db";
 
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 // Interface for database operations
 export interface IStorage {
@@ -41,7 +46,232 @@ export interface IStorage {
   getAuditLogsByUserId(userId: number): Promise<AuditLog[]>;
   
   // Session store
+  sessionStore: any;
+}
+
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
   sessionStore: session.SessionStore;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true
+    });
+  }
+
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
+    return user;
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        createdAt: new Date()
+      })
+      .returning();
+    return user;
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+  
+  async getDoctors(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.role, UserRole.DOCTOR));
+  }
+  
+  // Record operations
+  async getRecord(id: number): Promise<Record | undefined> {
+    const [record] = await db
+      .select()
+      .from(records)
+      .where(eq(records.id, id));
+    return record;
+  }
+  
+  async getRecordsByPatientId(patientId: number): Promise<Record[]> {
+    return await db
+      .select()
+      .from(records)
+      .where(eq(records.patientId, patientId));
+  }
+  
+  async getRecordsByDoctorId(doctorId: number): Promise<Record[]> {
+    return await db
+      .select()
+      .from(records)
+      .where(eq(records.doctorId, doctorId));
+  }
+  
+  async createRecord(insertRecord: InsertRecord): Promise<Record> {
+    const [record] = await db
+      .insert(records)
+      .values({
+        ...insertRecord,
+        createdAt: new Date()
+      })
+      .returning();
+    return record;
+  }
+  
+  async updateRecord(id: number, update: Partial<Record>): Promise<Record | undefined> {
+    const [updatedRecord] = await db
+      .update(records)
+      .set(update)
+      .where(eq(records.id, id))
+      .returning();
+    return updatedRecord;
+  }
+  
+  // Access request operations
+  async getAccessRequest(id: number): Promise<AccessRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(accessRequests)
+      .where(eq(accessRequests.id, id));
+    return request;
+  }
+  
+  async getAccessRequestsByPatientId(patientId: number): Promise<AccessRequest[]> {
+    return await db
+      .select()
+      .from(accessRequests)
+      .where(eq(accessRequests.patientId, patientId));
+  }
+  
+  async getAccessRequestsByDoctorId(doctorId: number): Promise<AccessRequest[]> {
+    return await db
+      .select()
+      .from(accessRequests)
+      .where(eq(accessRequests.doctorId, doctorId));
+  }
+  
+  async getActiveAccessRequests(doctorId: number, patientId: number): Promise<AccessRequest[]> {
+    const now = new Date();
+    return await db
+      .select()
+      .from(accessRequests)
+      .where(
+        and(
+          eq(accessRequests.doctorId, doctorId),
+          eq(accessRequests.patientId, patientId),
+          eq(accessRequests.status, "approved")
+        )
+      );
+    // Note: We'll filter expiry dates in the application code since 
+    // a null/undefined expiryDate means no expiration
+  }
+  
+  async hasAccess(doctorId: number, patientId: number): Promise<boolean> {
+    const activeRequests = await this.getActiveAccessRequests(doctorId, patientId);
+    const now = new Date();
+    
+    // Filter out expired requests
+    const validRequests = activeRequests.filter(request => 
+      !request.expiryDate || new Date(request.expiryDate) > now
+    );
+    
+    return validRequests.length > 0;
+  }
+  
+  async createAccessRequest(insertRequest: InsertAccessRequest): Promise<AccessRequest> {
+    // Calculate expiry date if approved and duration is set
+    let expiryDate: Date | undefined = undefined;
+    if (insertRequest.status === "approved" && insertRequest.duration) {
+      expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + insertRequest.duration);
+    }
+    
+    const [request] = await db
+      .insert(accessRequests)
+      .values({
+        ...insertRequest,
+        requestDate: new Date(),
+        expiryDate
+      })
+      .returning();
+    
+    return request;
+  }
+  
+  async updateAccessRequest(id: number, update: Partial<AccessRequest>): Promise<AccessRequest | undefined> {
+    const [currentRequest] = await db
+      .select()
+      .from(accessRequests)
+      .where(eq(accessRequests.id, id));
+    
+    if (!currentRequest) return undefined;
+    
+    // If status is being changed to approved, calculate expiry date
+    let expiryDate = currentRequest.expiryDate;
+    if (update.status === "approved" && currentRequest.status !== "approved") {
+      expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + (currentRequest.duration || 30)); // Default to 30 days
+    }
+    
+    const [updatedRequest] = await db
+      .update(accessRequests)
+      .set({
+        ...update,
+        expiryDate
+      })
+      .where(eq(accessRequests.id, id))
+      .returning();
+    
+    return updatedRequest;
+  }
+  
+  // Audit log operations
+  async createAuditLog(insertLog: InsertAuditLog): Promise<AuditLog> {
+    const [log] = await db
+      .insert(auditLogs)
+      .values({
+        ...insertLog,
+        timestamp: new Date()
+      })
+      .returning();
+    
+    return log;
+  }
+  
+  async getAuditLogs(): Promise<AuditLog[]> {
+    return await db
+      .select()
+      .from(auditLogs)
+      .orderBy(desc(auditLogs.timestamp));
+  }
+  
+  async getAuditLogsByUserId(userId: number): Promise<AuditLog[]> {
+    return await db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.userId, userId))
+      .orderBy(desc(auditLogs.timestamp));
+  }
 }
 
 // In-memory storage implementation
@@ -241,4 +471,5 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Use database storage
+export const storage = new DatabaseStorage();
