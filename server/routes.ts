@@ -519,11 +519,18 @@ Verified: ${record.verified ? "Yes" : "No"}
     try {
       const validatedData = profileSchema.parse(req.body);
       
+      // Debug log to see what's coming in
+      console.log('Profile update request:', req.body);
+      console.log('Validated data:', validatedData);
+      
       // Update user
       const updatedUser = await storage.updateUser(userId, validatedData);
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
+      
+      // Debug log to see what's returned after update
+      console.log('Updated user:', updatedUser);
 
       // Log the update
       await storage.createAuditLog({
