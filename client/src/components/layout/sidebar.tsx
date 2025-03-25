@@ -13,7 +13,8 @@ import {
   ShieldAlert,
   ClipboardList,
   Key,
-  Shield 
+  Shield,
+  Plus
 } from "lucide-react";
 import { useRole } from "@/hooks/use-role";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,16 +25,16 @@ export function Sidebar() {
   const [location, setLocation] = useLocation();
   const { isPatient, isDoctor, isAdmin } = useRole();
   const { user } = useAuth();
-  
+
   // Fetch access requests if user is a patient
   const { data: accessRequests } = useQuery<any[]>({
     queryKey: [`/api/access-requests/patient/${user?.id}`],
     enabled: !!user?.id && isPatient,
   });
-  
+
   // Count of pending requests
   const pendingRequestsCount = accessRequests?.filter(req => req.status === "pending")?.length || 0;
-  
+
   const isLinkActive = (path: string) => location === path;
 
   return (
@@ -80,7 +81,7 @@ export function Sidebar() {
             </NavItem>
           </div>
         )}
-        
+
         {/* Doctor navigation */}
         {isDoctor && (
           <div>
@@ -95,6 +96,17 @@ export function Sidebar() {
             >
               My Patients
             </NavItem>
+            <div className="flex items-center justify-between mb-6 px-3">
+              <h2 className="text-xl font-semibold">Request Patient Access</h2>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setLocation("/doctor/new-request")}
+                className="flex items-center"
+              >
+                <Plus className="h-4 w-4 mr-1" /> New Access Request
+              </Button>
+            </div>
             <NavItem
               icon={<Link className="mr-3 h-5 w-5" />}
               href="/doctor/request-access"
@@ -121,7 +133,7 @@ export function Sidebar() {
             </NavItem>
           </div>
         )}
-        
+
         {/* Admin navigation */}
         {isAdmin && (
           <div>
@@ -163,7 +175,7 @@ export function Sidebar() {
           </div>
         )}
       </nav>
-      
+
       {/* Help & Support Box */}
       <div className="mt-8 rounded-lg bg-card p-4 shadow-sm border border-border">
         <h3 className="text-sm font-medium text-primary flex items-center">
