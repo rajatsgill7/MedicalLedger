@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { MainLayout } from "@/components/layout/main-layout";
@@ -48,6 +48,14 @@ export default function PatientRecords() {
   
   // Filter for pending requests only
   const pendingRequests = accessRequests?.filter(req => req.status === "pending") || [];
+  
+  // For debugging
+  useEffect(() => {
+    if (accessRequests) {
+      console.log("Access requests:", accessRequests);
+      console.log("Pending requests:", pendingRequests);
+    }
+  }, [accessRequests, pendingRequests]);
 
   // Handler for viewing a record
   const handleViewRecord = (id: number) => {
@@ -210,7 +218,7 @@ export default function PatientRecords() {
       </div>
 
       {/* Access Requests Alert */}
-      {pendingRequests.length > 0 && !isLoading && !isLoadingAccessRequests && (
+      {pendingRequests && pendingRequests.length > 0 && !isLoading && !isLoadingAccessRequests && (
         <div className="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 rounded-md">
           <div className="flex">
             <div className="flex-shrink-0">
