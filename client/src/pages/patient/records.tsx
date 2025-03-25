@@ -6,7 +6,7 @@ import { RecordCard } from "@/components/medical/record-card";
 import { UploadRecordModal } from "@/components/medical/upload-record-modal";
 import { SearchFilters } from "@/components/medical/search-filters";
 import { useToast } from "@/hooks/use-toast";
-import { Record } from "@shared/schema";
+import { Record, AccessRequest } from "@shared/schema";
 import { 
   Bell, 
   Upload,
@@ -190,30 +190,50 @@ export default function PatientRecords() {
 
       {/* Access Requests Alert */}
       {!isLoading && (
-        <div className="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 rounded-md">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <Bell className="text-yellow-400 h-5 w-5" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">You have pending access requests</h3>
-              <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
-                <p>Healthcare providers have requested access to your medical records.</p>
-              </div>
-              <div className="mt-4">
-                <div className="-mx-2 -my-1.5 flex">
-                  <Link href="/patient/access-requests">
-                    <Button
-                      variant="link"
-                      className="px-2 py-1.5 text-sm text-yellow-800 dark:text-yellow-200 hover:bg-yellow-100 dark:hover:bg-yellow-900"
-                    >
-                      Review Requests
-                    </Button>
-                  </Link>
+        <div className="mt-8">
+          {/* Fetch pending access requests */}
+          {(() => {
+            const { data: accessRequests, isLoading: isLoadingRequests } = useQuery<AccessRequest[]>({
+              queryKey: [`/api/access-requests/patient/${user?.id}`],
+              enabled: !!user?.id,
+            });
+            
+            const pendingRequests = accessRequests?.filter(req => req.status === "pending") || [];
+            
+            if (isLoadingRequests || pendingRequests.length === 0) {
+              return null;
+            }
+            
+            return (
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <Bell className="text-yellow-400 h-5 w-5" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                      You have {pendingRequests.length} pending access {pendingRequests.length === 1 ? 'request' : 'requests'}
+                    </h3>
+                    <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                      <p>Healthcare providers have requested access to your medical records.</p>
+                    </div>
+                    <div className="mt-4">
+                      <div className="-mx-2 -my-1.5 flex">
+                        <Link href="/patient/access-requests">
+                          <Button
+                            variant="link"
+                            className="px-2 py-1.5 text-sm text-yellow-800 dark:text-yellow-200 hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                          >
+                            Review Requests
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       )}
 
