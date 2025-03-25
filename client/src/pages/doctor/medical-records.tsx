@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { MainLayout } from "@/components/layout/main-layout";
 import { RecordCard } from "@/components/medical/record-card";
 import { SearchFilters } from "@/components/medical/search-filters";
@@ -44,8 +44,8 @@ export default function DoctorMedicalRecords() {
   const [dateRange, setDateRange] = useState<string>("all");
   const [patientName, setPatientName] = useState<string>("");
   const [isBackToPatients, setIsBackToPatients] = useState<boolean>(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, navigate] = useRoute("*");
+  // Use useLocation for navigation
+  const [_, setLocation] = useLocation();
   
   // If we have a patient ID in the URL, use it to filter records
   useEffect(() => {
@@ -134,7 +134,7 @@ export default function DoctorMedicalRecords() {
             <Button 
               variant="ghost" 
               className="mb-2"
-              onClick={() => navigate("/doctor/patients")}
+              onClick={() => setLocation("/doctor/patients")}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Patients
@@ -217,7 +217,7 @@ export default function DoctorMedicalRecords() {
               doctorName={record.doctorName || "Unknown Provider"}
               recordDate={record.recordDate.toString()}
               notes={record.notes || undefined}
-              verified={record.verified}
+              verified={record.verified || false}
               onView={handleViewRecord}
               onDownload={handleDownloadRecord}
             />
@@ -284,7 +284,7 @@ export default function DoctorMedicalRecords() {
             
             <div>
               <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h4>
-              <p>{viewRecord?.verified ? "Verified" : "Pending Verification"}</p>
+              <p>{viewRecord?.verified === true ? "Verified" : "Pending Verification"}</p>
             </div>
             
             {viewRecord?.fileUrl && (

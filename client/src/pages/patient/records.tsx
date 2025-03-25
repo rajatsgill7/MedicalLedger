@@ -167,7 +167,7 @@ export default function PatientRecords() {
               doctorName={record.doctorName || "Unknown Provider"}
               recordDate={record.recordDate.toString()}
               notes={record.notes || undefined}
-              verified={record.verified}
+              verified={record.verified || false}
               onView={handleViewRecord}
               onDownload={handleDownloadRecord}
             />
@@ -259,7 +259,7 @@ export default function PatientRecords() {
             
             <div>
               <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h4>
-              <p>{viewRecord?.verified ? "Verified" : "Pending Verification"}</p>
+              <p>{viewRecord?.verified === true ? "Verified" : "Pending Verification"}</p>
             </div>
             
             {viewRecord?.fileUrl && (
