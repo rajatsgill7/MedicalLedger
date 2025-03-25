@@ -56,8 +56,8 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="left" className="w-[300px] sm:w-[350px] border-r">
-        <SheetHeader className="flex justify-between items-center border-b pb-4 mb-1">
+      <SheetContent side="left" className="w-[85vw] sm:w-[350px] border-r p-4">
+        <SheetHeader className="flex justify-between items-center border-b pb-4 mb-3">
           <div className="flex items-center">
             <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center mr-2">
               <Shield className="h-5 w-5 text-white" />
@@ -71,7 +71,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           </SheetClose>
         </SheetHeader>
         
-        <div className="py-3 space-y-6">
+        <div className="py-2 space-y-5 overflow-y-auto">
           {/* Patient navigation */}
           {isPatient && (
             <div className="space-y-1">
@@ -200,15 +200,15 @@ function NavItem({ label, icon, active, onClick, badge }: NavItemProps) {
   return (
     <Button
       variant={active ? "secondary" : "ghost"}
-      className={`w-full justify-start text-sm mb-1 h-10 px-3 font-medium transition-colors
+      className={`w-full justify-start text-sm mb-1.5 h-11 px-3 font-medium transition-colors
         ${active 
-          ? "bg-muted/80 text-primary dark:text-primary dark:bg-muted/30 dark:hover:bg-muted/40" 
+          ? "bg-primary text-primary-foreground dark:text-primary-foreground dark:bg-primary" 
           : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
         }`}
       onClick={onClick}
     >
       {icon}
-      {label}
+      <span className="text-base">{label}</span>
       {badge && (
         <span className="ml-auto bg-red-500/90 text-white text-xs font-medium px-2 py-0.5 rounded-full">
           {badge}
