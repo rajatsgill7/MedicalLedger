@@ -128,6 +128,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     res.json(records);
   });
+  
+  // Get all records for a doctor (across all patients they have access to)
+  app.get('/api/records/doctor/:doctorId', isAuthenticated, hasRole([UserRole.DOCTOR]), async (req, res) => {
+    const doctorId = parseInt(req.params.doctorId);
+    if (isNaN(doctorId)) {
+      return res.status(400).json({ message: "Invalid doctor ID" });
+    }
+    
+    const user = req.user;
+    
+    // Doctors can only view their own accessible records
+    if (doctorId !== user.id) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    
+    // Get all active access requests for this doctor
+    const accessRequests = await storage.getAccessRequestsByDoctorId(doctorId);
+    const activeRequests = accessRequests.filter(req => req.status === "approved");
+    
+    // Get all records for patients the doctor has access to
+    const allRecords = [];
+    
+    // Add the doctor's own records if they are also a patient
+    if (user.role === UserRole.DOCTOR) {
+      const ownRecords = await storage.getRecordsByPatientId(doctorId);
+      allRecords.push(...ownRecords);
+    }
+    
+    // Get records for each patient the doctor has access to
+    for (const request of activeRequests) {
+      const patientRecords = await storage.getRecordsByPatientId(request.patientId);
+      // For each record, add doctor access info
+      patientRecords.forEach(record => {
+        record.accessGranted = true;
+        record.accessExpiryDate = request.expiryDate;
+      });
+      allRecords.push(...patientRecords);
+    }
+    
+    // Log this access
+    await storage.createAuditLog({
+      userId: user.id,
+      action: "records_viewed",
+      details: `Doctor viewed their accessible patient records`,
+      ipAddress: req.ip
+    });
+    
+    res.json(allRecords);
+  });
 
   app.post('/api/records', isAuthenticated, async (req, res) => {
     try {
