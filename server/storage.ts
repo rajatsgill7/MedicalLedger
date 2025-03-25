@@ -190,7 +190,9 @@ export class DatabaseStorage implements IStorage {
   
   async getActiveAccessRequests(doctorId: number, patientId: number): Promise<AccessRequest[]> {
     const now = new Date();
-    return await db
+    
+    // First, get all approved requests
+    const requests = await db
       .select()
       .from(accessRequests)
       .where(
@@ -200,38 +202,40 @@ export class DatabaseStorage implements IStorage {
           eq(accessRequests.status, "approved")
         )
       );
-    // Note: We'll filter expiry dates in the application code since 
-    // a null/undefined expiryDate means no expiration
+    
+    // Then filter out expired ones in the application code since SQL handling of null dates is tricky
+    return requests.filter(request => 
+      !request.expiryDate || (request.expiryDate instanceof Date && request.expiryDate > now)
+    );
   }
   
   async hasAccess(doctorId: number, patientId: number): Promise<boolean> {
     const activeRequests = await this.getActiveAccessRequests(doctorId, patientId);
-    const now = new Date();
-    
-    // Filter out expired requests
-    const validRequests = activeRequests.filter(request => 
-      !request.expiryDate || new Date(request.expiryDate) > now
-    );
-    
-    return validRequests.length > 0;
+    return activeRequests.length > 0;
   }
   
   async createAccessRequest(insertRequest: InsertAccessRequest): Promise<AccessRequest> {
+    // Set default status if not provided
+    const status = insertRequest.status || "pending";
+    
     // Calculate expiry date if approved and duration is set
     let expiryDate: Date | null = null;
-    if (insertRequest.status === "approved" && insertRequest.duration) {
+    if (status === "approved" && insertRequest.duration) {
       expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + insertRequest.duration);
     }
     
     // Set default values for optional fields
     const notes = insertRequest.notes === undefined ? null : insertRequest.notes;
+    const limitedScope = insertRequest.limitedScope === undefined ? null : insertRequest.limitedScope;
     
     const [request] = await db
       .insert(accessRequests)
       .values({
         ...insertRequest,
+        status,
         notes,
+        limitedScope,
         requestDate: new Date(),
         expiryDate
       })
@@ -459,7 +463,7 @@ export class MemStorage implements IStorage {
         request.doctorId === doctorId && 
         request.patientId === patientId &&
         request.status === "approved" &&
-        (request.expiryDate === undefined || new Date(request.expiryDate) > now)
+        (!request.expiryDate || (request.expiryDate instanceof Date && request.expiryDate > now))
     );
   }
   
@@ -472,18 +476,28 @@ export class MemStorage implements IStorage {
     const id = this.accessRequestIdCounter++;
     const requestDate = new Date();
     
+    // Set default status if not provided
+    const status = insertRequest.status || "pending";
+    
     // Calculate expiry date if approved and duration is set
-    let expiryDate: Date | undefined = undefined;
-    if (insertRequest.status === "approved" && insertRequest.duration) {
+    let expiryDate: Date | null = null;
+    if (status === "approved" && insertRequest.duration) {
       expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + insertRequest.duration);
     }
     
+    // Set default values for optional fields
+    const notes = insertRequest.notes === undefined ? null : insertRequest.notes;
+    const limitedScope = insertRequest.limitedScope === undefined ? null : insertRequest.limitedScope;
+    
     const request: AccessRequest = { 
       ...insertRequest, 
       id, 
+      status,
       requestDate,
-      expiryDate 
+      expiryDate,
+      notes,
+      limitedScope
     };
     
     this.accessRequestsMap.set(id, request);
