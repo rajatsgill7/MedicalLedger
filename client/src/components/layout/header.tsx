@@ -80,7 +80,7 @@ export function Header() {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      // Profile page would go here
+                      setLocation("/settings");
                     }}
                   >
                     Profile Settings

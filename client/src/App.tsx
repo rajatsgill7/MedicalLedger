@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import HomePage from "@/pages/home-page";
+import SettingsPage from "@/pages/settings-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 // Patient Pages
@@ -64,6 +65,11 @@ function Router() {
       </Route>
       <Route path="/admin/access-control">
         <ProtectedRoute component={AdminAccessControl} requiredRole="admin" />
+      </Route>
+
+      {/* Settings Page (accessible by all roles) */}
+      <Route path="/settings">
+        <ProtectedRoute component={SettingsPage} />
       </Route>
 
       {/* Fallback to 404 */}
