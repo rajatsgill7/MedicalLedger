@@ -154,7 +154,7 @@ export default function PatientDoctors() {
                   </div>
                   <Badge 
                     variant="outline"
-                    className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                    className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full px-3 py-1"
                   >
                     Active Access
                   </Badge>
@@ -274,7 +274,7 @@ export default function PatientDoctors() {
                   
                   {hasAccess ? (
                     <Badge 
-                      className="mt-4 w-full justify-center py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                      className="mt-4 w-full justify-center py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full"
                       variant="outline"
                     >
                       Has Access

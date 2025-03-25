@@ -35,7 +35,7 @@ export function PatientCard({ patient }: PatientCardProps) {
 
         {patient.accessStatus === "active" ? (
           <Badge 
-            className="mt-4 w-full justify-center py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+            className="mt-4 w-full justify-center py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full"
             variant="outline"
           >
             Has Access
