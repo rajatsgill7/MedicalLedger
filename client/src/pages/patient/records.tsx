@@ -30,8 +30,8 @@ export default function PatientRecords() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [viewRecord, setViewRecord] = useState<Record | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [recordType, setRecordType] = useState<string>("");
-  const [doctorFilter, setDoctorFilter] = useState<string>("");
+  const [recordType, setRecordType] = useState<string>("all-types");
+  const [doctorFilter, setDoctorFilter] = useState<string>("all-doctors");
   const [dateRange, setDateRange] = useState<string>("all");
 
   // Fetch patient records
@@ -39,6 +39,15 @@ export default function PatientRecords() {
     queryKey: [`/api/patients/${user?.id}/records`],
     enabled: !!user?.id,
   });
+  
+  // Fetch access requests to check for pending ones
+  const { data: accessRequests, isLoading: isLoadingAccessRequests } = useQuery<AccessRequest[]>({
+    queryKey: [`/api/access-requests/patient/${user?.id}`],
+    enabled: !!user?.id,
+  });
+  
+  // Filter for pending requests only
+  const pendingRequests = accessRequests?.filter(req => req.status === "pending") || [];
 
   // Handler for viewing a record
   const handleViewRecord = (id: number) => {
@@ -171,12 +180,12 @@ export default function PatientRecords() {
             </div>
             <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No records found</h3>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              {searchTerm || recordType || doctorFilter || dateRange !== "all" 
+              {searchTerm || recordType !== "all-types" || doctorFilter !== "all-doctors" || dateRange !== "all" 
                 ? "Try adjusting your filters or search terms"
                 : "Get started by uploading your first medical record"
               }
             </p>
-            {!searchTerm && !recordType && !doctorFilter && dateRange === "all" && (
+            {!searchTerm && recordType === "all-types" && doctorFilter === "all-doctors" && dateRange === "all" && (
               <Button
                 className="mt-4"
                 onClick={() => setUploadModalOpen(true)}
@@ -189,51 +198,33 @@ export default function PatientRecords() {
       </div>
 
       {/* Access Requests Alert */}
-      {!isLoading && (
-        <div className="mt-8">
-          {/* Fetch pending access requests */}
-          {(() => {
-            const { data: accessRequests, isLoading: isLoadingRequests } = useQuery<AccessRequest[]>({
-              queryKey: [`/api/access-requests/patient/${user?.id}`],
-              enabled: !!user?.id,
-            });
-            
-            const pendingRequests = accessRequests?.filter(req => req.status === "pending") || [];
-            
-            if (isLoadingRequests || pendingRequests.length === 0) {
-              return null;
-            }
-            
-            return (
-              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 rounded-md">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <Bell className="text-yellow-400 h-5 w-5" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                      You have {pendingRequests.length} pending access {pendingRequests.length === 1 ? 'request' : 'requests'}
-                    </h3>
-                    <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
-                      <p>Healthcare providers have requested access to your medical records.</p>
-                    </div>
-                    <div className="mt-4">
-                      <div className="-mx-2 -my-1.5 flex">
-                        <Link href="/patient/access-requests">
-                          <Button
-                            variant="link"
-                            className="px-2 py-1.5 text-sm text-yellow-800 dark:text-yellow-200 hover:bg-yellow-100 dark:hover:bg-yellow-900"
-                          >
-                            Review Requests
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
+      {pendingRequests.length > 0 && !isLoading && !isLoadingAccessRequests && (
+        <div className="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 rounded-md">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <Bell className="text-yellow-400 h-5 w-5" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                You have {pendingRequests.length} pending access {pendingRequests.length === 1 ? 'request' : 'requests'}
+              </h3>
+              <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                <p>Healthcare providers have requested access to your medical records.</p>
+              </div>
+              <div className="mt-4">
+                <div className="-mx-2 -my-1.5 flex">
+                  <Link href="/patient/access-requests">
+                    <Button
+                      variant="link"
+                      className="px-2 py-1.5 text-sm text-yellow-800 dark:text-yellow-200 hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                    >
+                      Review Requests
+                    </Button>
+                  </Link>
                 </div>
               </div>
-            );
-          })()}
+            </div>
+          </div>
         </div>
       )}
 

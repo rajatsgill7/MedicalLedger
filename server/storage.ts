@@ -175,10 +175,33 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getAccessRequestsByPatientId(patientId: number): Promise<AccessRequest[]> {
-    return await db
+    const requests = await db
       .select()
       .from(accessRequests)
-      .where(eq(accessRequests.patientId, patientId));
+      .where(eq(accessRequests.patientId, patientId))
+      .orderBy(desc(accessRequests.requestDate));
+      
+    // Enrich with doctor info
+    const doctorIds = [...new Set(requests.map(req => req.doctorId))];
+    
+    const doctors = doctorIds.length > 0 
+      ? await db.select().from(users).where(
+          and(
+            eq(users.role, UserRole.DOCTOR),
+            users.id.in(doctorIds)
+          )
+        )
+      : [];
+    
+    // Create doctor lookup map
+    const doctorMap = new Map();
+    doctors.forEach(doctor => doctorMap.set(doctor.id, doctor));
+    
+    // Add doctor info to each request
+    return requests.map(request => ({
+      ...request,
+      doctor: doctorMap.get(request.doctorId)
+    }));
   }
   
   async getAccessRequestsByDoctorId(doctorId: number): Promise<AccessRequest[]> {
