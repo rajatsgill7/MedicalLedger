@@ -102,11 +102,39 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateUser(id: number, update: Partial<User>): Promise<User | undefined> {
-    const [updatedUser] = await db
-      .update(users)
-      .set(update)
-      .where(eq(users.id, id))
-      .returning();
+    // Handle notificationPreferences separately since it's not a column in the database
+    const { notificationPreferences, ...dbUpdate } = update;
+    
+    // Get the current user first
+    const [currentUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id));
+      
+    if (!currentUser) return undefined;
+    
+    // If there are database fields to update, perform the update
+    let updatedUser = currentUser;
+    if (Object.keys(dbUpdate).length > 0) {
+      const [updated] = await db
+        .update(users)
+        .set(dbUpdate)
+        .where(eq(users.id, id))
+        .returning();
+      
+      if (updated) {
+        updatedUser = updated;
+      }
+    }
+    
+    // Return the user with notification preferences added if they were in the update
+    if (notificationPreferences) {
+      return {
+        ...updatedUser,
+        notificationPreferences
+      };
+    }
+    
     return updatedUser;
   }
 
