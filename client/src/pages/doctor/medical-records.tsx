@@ -186,7 +186,7 @@ export default function DoctorMedicalRecords() {
 
   return (
     <MainLayout>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <div>
           {isBackToPatients && (
             <Button 
@@ -198,7 +198,7 @@ export default function DoctorMedicalRecords() {
               Back to Patients
             </Button>
           )}
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-semibold text-foreground">
             {patientName ? `${patientName}'s Medical Records` : "Medical Records"}
           </h1>
         </div>

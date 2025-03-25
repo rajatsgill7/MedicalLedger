@@ -63,7 +63,7 @@ export function SearchFilters({
 
   return (
     <Card className="bg-white dark:bg-gray-800 shadow">
-      <CardContent className="p-4">
+      <CardContent className="bg-card text-card-foreground p-6 rounded-lg border border-border/40 mb-8"> {/*This line was changed */}
         <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
           <div className="flex-1">
             <div className="relative">
@@ -76,7 +76,7 @@ export function SearchFilters({
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             {showPatientSearch && setPatientNameSearch && (
               <div className="relative mt-2">
                 <Search className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 h-4 w-4" />
@@ -105,7 +105,7 @@ export function SearchFilters({
                 ))}
               </SelectContent>
             </Select>
-            
+
             {showDoctorFilter && setDoctorFilter && (
               <Select
                 value={doctorFilter}
@@ -122,7 +122,7 @@ export function SearchFilters({
                 </SelectContent>
               </Select>
             )}
-            
+
             <Select
               value={dateRange}
               onValueChange={setDateRange}
@@ -137,7 +137,7 @@ export function SearchFilters({
                 <SelectItem value="12months">Last 12 Months</SelectItem>
               </SelectContent>
             </Select>
-            
+
             {hasFilters && (
               <Button 
                 variant="outline" 
