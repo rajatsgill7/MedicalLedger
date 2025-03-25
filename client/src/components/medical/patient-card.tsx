@@ -1,40 +1,50 @@
-import { useState } from "react";
-import { User as UserCog } from "lucide-react";
+
+import { formatDate } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/utils";
+import { User as UserIcon } from "lucide-react";
 
-interface PatientProps {
+interface PatientCardProps {
   patient: {
-    id: number;
+    id: string;
     fullName: string;
-    accessStatus: string;
-    recordCount: number;
-    lastVisit?: string;
-    accessUntil?: string;
     age?: number;
+    lastVisit?: string;
+    accessStatus?: string;
+    accessUntil?: string;
   };
-  getStatusBadge: () => JSX.Element;
 }
 
-export function PatientCard({ patient, getStatusBadge }: PatientProps) {
+export function PatientCard({ patient }: PatientCardProps) {
   return (
-    <Card className="overflow-hidden border border-border/40 hover:border-border/60 dark:border-border/30 dark:hover:border-border/50 hover:shadow-card transition-all duration-200">
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start gap-4">
-          <div className="flex items-center">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <UserCog className="h-6 w-6" />
-            </div>
-            <div className="ml-4">
-              <h3 className="text-lg font-semibold text-foreground">{patient.fullName}</h3>
-              <p className="text-sm text-muted-foreground">ID: P-{patient.id.toString().padStart(5, '0')}</p>
-            </div>
+    <Card>
+      <CardContent className="p-5">
+        <div className="flex items-center">
+          <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300">
+            <UserIcon className="h-6 w-6" />
           </div>
-          <div>
-            {getStatusBadge()}
+          <div className="ml-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              {patient.fullName}
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Patient ID: {patient.id}
+            </p>
           </div>
         </div>
+
+        {patient.accessStatus === "active" ? (
+          <Badge 
+            className="mt-4 w-full justify-center py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+            variant="outline"
+          >
+            Has Access
+          </Badge>
+        ) : (
+          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+            No active access
+          </p>
+        )}
 
         <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
           {patient.age && (
