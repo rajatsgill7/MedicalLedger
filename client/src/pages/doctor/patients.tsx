@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { MainLayout } from "@/components/layout/main-layout";
 import { PatientCard } from "@/components/medical/patient-card";
@@ -136,12 +137,11 @@ export default function DoctorPatients() {
   });
 
   // Navigate to patient records
+  const navigate = useLocation()[1];
+  
   const handleViewRecords = (patientId: number) => {
-    // In a real app, this would navigate to the patient's records page
-    toast({
-      title: "Viewing records",
-      description: `Accessing records for patient #${patientId}`
-    });
+    // Navigate to patient records page
+    navigate(`/patients/${patientId}/records`);
   };
 
   return (

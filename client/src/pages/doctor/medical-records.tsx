@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useRoute } from "wouter";
 import { MainLayout } from "@/components/layout/main-layout";
 import { RecordCard } from "@/components/medical/record-card";
 import { SearchFilters } from "@/components/medical/search-filters";
@@ -10,7 +11,8 @@ import { Record } from "@shared/schema";
 import { 
   Upload,
   Folder,
-  Loader2 
+  Loader2,
+  ArrowLeft 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -33,12 +35,39 @@ import {
 export default function DoctorMedicalRecords() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [match, params] = useRoute<{ patientId: string }>("/patients/:patientId/records");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [viewRecord, setViewRecord] = useState<Record | null>(null);
   const [patientIdFilter, setPatientIdFilter] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [recordType, setRecordType] = useState<string>("");
   const [dateRange, setDateRange] = useState<string>("all");
+  const [patientName, setPatientName] = useState<string>("");
+  const [isBackToPatients, setIsBackToPatients] = useState<boolean>(false);
+  const [location, navigate] = useRoute("/patients/:patientId/records");
+  
+  // If we have a patient ID in the URL, use it to filter records
+  useEffect(() => {
+    if (params?.patientId) {
+      setPatientIdFilter(params.patientId);
+      
+      // Fetch patient details to show name
+      if (user?.id) {
+        fetch(`/api/users/${params.patientId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.fullName) {
+              setPatientName(data.fullName);
+            }
+          })
+          .catch(err => {
+            console.error("Error fetching patient details:", err);
+          });
+      }
+      
+      setIsBackToPatients(true);
+    }
+  }, [params?.patientId, user?.id]);
 
   // Fetch doctor's records
   const { data: records, isLoading } = useQuery<Record[]>({
@@ -99,7 +128,21 @@ export default function DoctorMedicalRecords() {
   return (
     <MainLayout>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Medical Records</h1>
+        <div>
+          {isBackToPatients && (
+            <Button 
+              variant="ghost" 
+              className="mb-2"
+              onClick={() => navigate("/doctor/patients")}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Patients
+            </Button>
+          )}
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {patientName ? `${patientName}'s Medical Records` : "Medical Records"}
+          </h1>
+        </div>
         <Button 
           className="mt-4 sm:mt-0"
           onClick={() => setUploadModalOpen(true)}

@@ -55,6 +55,9 @@ function Router() {
       <Route path="/doctor/medical-records">
         <ProtectedRoute component={DoctorMedicalRecords} requiredRole="doctor" />
       </Route>
+      <Route path="/patients/:patientId/records">
+        <ProtectedRoute component={DoctorMedicalRecords} requiredRole="doctor" />
+      </Route>
 
       {/* Admin Routes */}
       <Route path="/admin/user-management">
