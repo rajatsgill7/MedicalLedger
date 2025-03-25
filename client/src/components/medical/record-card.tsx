@@ -28,53 +28,53 @@ export function RecordCard({
   onDownload,
 }: RecordCardProps) {
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">{title}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+    <Card className="hover:shadow-card transition-all-200 border border-border/40 dark:border-border/30">
+      <CardContent className="p-5">
+        <div className="flex justify-between items-start gap-4">
+          <div className="flex-1">
+            <h3 className="text-lg font-medium text-foreground mb-1">{title}</h3>
+            <p className="text-sm text-muted-foreground">
               {doctorName} • {formatDate(recordDate)}
             </p>
             {notes && (
-              <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+              <p className="mt-2 text-sm text-foreground/80 dark:text-foreground/75">
                 {truncateText(notes, 100)}
               </p>
             )}
             <div className="mt-3 flex flex-wrap gap-2">
               <Badge
-                className={getRecordTypeBadgeColor(recordType)}
+                className={`${getRecordTypeBadgeColor(recordType)} font-medium transition-colors`}
                 variant="outline"
               >
                 {recordType}
               </Badge>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-right flex flex-col items-end">
             <Badge
               variant="outline"
               className={
                 verified
-                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                  ? "bg-success/10 border-success/20 text-success hover:bg-success/15"
+                  : "bg-warning/10 border-warning/20 text-warning hover:bg-warning/15"
               }
             >
               {verified ? "Verified" : "Pending"}
             </Badge>
-            <div className="flex mt-2 space-x-2 justify-end">
+            <div className="flex mt-3 space-x-1 justify-end">
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={() => onView && onView(id)}
-                className="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary-light"
+                className="text-muted-foreground hover:text-primary transition-colors h-8 w-8 p-0"
               >
                 <Eye className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={() => onDownload && onDownload(id)}
-                className="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary-light"
+                className="text-muted-foreground hover:text-primary transition-colors h-8 w-8 p-0"
               >
                 <Download className="h-4 w-4" />
               </Button>

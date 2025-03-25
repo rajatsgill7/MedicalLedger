@@ -107,6 +107,12 @@
     transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   
+  .transition-colors-200 {
+    transition: color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
   /* Custom shadow utilities for dark mode */
   .shadow-card {
     @apply shadow-md dark:shadow-[0_4px_12px_0_rgba(0,0,0,0.5)];
@@ -116,9 +122,30 @@
     @apply shadow-lg dark:shadow-[0_4px_16px_0_rgba(0,0,0,0.6)];
   }
   
+  .shadow-sidebar {
+    @apply shadow-md dark:shadow-[2px_0_12px_0_rgba(0,0,0,0.4)];
+  }
+  
+  .shadow-nav {
+    @apply shadow-md dark:shadow-[0_2px_8px_0_rgba(0,0,0,0.4)];
+  }
+  
   /* Glass morphism effect */
   .glass-effect {
     @apply bg-white/80 dark:bg-gray-950/80 backdrop-blur-md backdrop-saturate-150;
+  }
+  
+  .glass-card {
+    @apply bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm backdrop-saturate-150 border border-white/20 dark:border-gray-800/50;
+  }
+  
+  /* Theme-colored border utilities */
+  .border-theme-light {
+    @apply border-primary/10;
+  }
+  
+  .border-theme-dark {
+    @apply dark:border-primary/20;
   }
   
   /* Success/warning/info colors */
@@ -130,6 +157,10 @@
     background-color: hsl(var(--success));
   }
   
+  .border-success {
+    border-color: hsl(var(--success));
+  }
+  
   .text-warning {
     color: hsl(var(--warning));
   }
@@ -138,11 +169,33 @@
     background-color: hsl(var(--warning));
   }
   
+  .border-warning {
+    border-color: hsl(var(--warning));
+  }
+  
   .text-info {
     color: hsl(var(--info));
   }
   
   .bg-info {
     background-color: hsl(var(--info));
+  }
+  
+  .border-info {
+    border-color: hsl(var(--info));
+  }
+  
+  /* Hover states */
+  .hover-text-primary {
+    @apply hover:text-primary/90 transition-colors-200;
+  }
+  
+  .hover-bg-primary {
+    @apply hover:bg-primary/90 transition-colors-200;
+  }
+  
+  /* Focus ring utilities */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-all-200;
   }
 }
