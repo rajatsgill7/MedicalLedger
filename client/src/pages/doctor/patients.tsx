@@ -10,7 +10,8 @@ import {
   User,
   Link as LinkIcon,
   Search,
-  Loader2
+  Loader2,
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -242,26 +243,96 @@ export default function DoctorPatients() {
                 </div>
                 
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
                 </div>
-              </div>
-              
-              <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3">
-                <Skeleton className="h-8 w-full" />
               </div>
             </div>
           ))
         ) : sortedPatients.length > 0 ? (
           sortedPatients.map((patient) => (
-            <PatientCard
-              key={patient.id}
-              patient={patient}
-              onViewRecords={() => handleViewRecords(patient.id)}
-              onRequestAccess={() => setRequestModalOpen(true)}
-            />
+            <div key={patient.id} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+              <div className="p-5">
+                <div className="flex justify-between">
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center">
+                      <User className="h-6 w-6" />
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                        {patient.fullName}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        ID: P-{patient.id.toString().padStart(5, '0')}
+                      </p>
+                    </div>
+                  </div>
+                  {patient.accessStatus === "active" && (
+                    <div className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs font-medium px-2.5 py-0.5 rounded border border-green-200 dark:border-green-800">
+                      Active Access
+                    </div>
+                  )}
+                  {patient.accessStatus === "pending" && (
+                    <div className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs font-medium px-2.5 py-0.5 rounded border border-yellow-200 dark:border-yellow-800">
+                      Pending Approval
+                    </div>
+                  )}
+                  {patient.accessStatus === "expired" && (
+                    <div className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 text-xs font-medium px-2.5 py-0.5 rounded border border-gray-200 dark:border-gray-600">
+                      Expired
+                    </div>
+                  )}
+                  {patient.accessStatus === "none" && (
+                    <div className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-medium px-2.5 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                      No Access
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                  {patient.accessStatus === "active" && patient.accessUntil && (
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400">Access Until</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {formatDate(patient.accessUntil)}
+                      </p>
+                    </div>
+                  )}
+                  {patient.lastVisit && (
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400">Last Activity</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {formatDate(patient.lastVisit)}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-gray-500 dark:text-gray-400">Records</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{patient.recordCount}</p>
+                  </div>
+                </div>
+                
+                <div className="mt-4">
+                  {patient.accessStatus === "active" ? (
+                    <Button 
+                      variant="outline"
+                      onClick={() => handleViewRecords(patient.id)}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      View Records
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline"
+                      onClick={() => setRequestModalOpen(true)}
+                    >
+                      <LinkIcon className="mr-2 h-4 w-4" />
+                      Request Access
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
           ))
         ) : (
           // Empty state
