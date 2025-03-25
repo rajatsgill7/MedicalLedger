@@ -1,7 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth, comparePasswords, hashPassword } from "./auth";
+import { z } from "zod";
 import { 
   insertRecordSchema, 
   insertAccessRequestSchema, 
@@ -340,6 +341,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const logs = await storage.getAuditLogsByUserId(userId);
     res.json(logs);
+  });
+
+  // User profile and settings routes
+  app.patch('/api/users/:id', isAuthenticated, async (req, res) => {
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    const user = req.user;
+    
+    // Users can only update their own profile, admins can update any
+    if (user.role !== UserRole.ADMIN && userId !== user.id) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // Validate profile data using zod
+    const profileSchema = z.object({
+      fullName: z.string().min(3).optional(),
+      email: z.string().email().optional(),
+      specialty: z.string().optional(),
+      phone: z.string().optional(),
+    });
+
+    try {
+      const validatedData = profileSchema.parse(req.body);
+      
+      // Update user
+      const updatedUser = await storage.updateUser(userId, validatedData);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Log the update
+      await storage.createAuditLog({
+        userId: user.id,
+        action: "profile_updated",
+        details: `User updated profile information`,
+        ipAddress: req.ip
+      });
+
+      // Don't send password to client
+      const { password, ...sanitizedUser } = updatedUser;
+      res.json(sanitizedUser);
+    } catch (error) {
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid profile data", errors: error.errors });
+      }
+      throw error;
+    }
+  });
+
+  app.post('/api/users/:id/change-password', isAuthenticated, async (req, res) => {
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    const user = req.user;
+    
+    // Users can only change their own password, admins can force change
+    if (user.role !== UserRole.ADMIN && userId !== user.id) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: "New password must be at least 8 characters" });
+    }
+
+    // For regular users, verify current password
+    if (userId === user.id && user.role !== UserRole.ADMIN) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: "Current password is required" });
+      }
+
+      const userToUpdate = await storage.getUser(userId);
+      if (!userToUpdate) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const passwordValid = await comparePasswords(currentPassword, userToUpdate.password);
+      if (!passwordValid) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+    }
+
+    // Update password
+    const hashedPassword = await hashPassword(newPassword);
+    const updatedUser = await storage.updateUser(userId, { password: hashedPassword });
+    
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Log the update
+    await storage.createAuditLog({
+      userId: user.id,
+      action: "password_changed",
+      details: userId === user.id 
+        ? `User changed their password` 
+        : `Admin changed password for user ${userId}`,
+      ipAddress: req.ip
+    });
+
+    res.json({ message: "Password updated successfully" });
+  });
+
+  app.patch('/api/users/:id/notifications', isAuthenticated, async (req, res) => {
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    const user = req.user;
+    
+    // Users can only update their own notifications
+    if (userId !== user.id) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const notificationSchema = z.object({
+      emailNotifications: z.boolean().optional(),
+      smsNotifications: z.boolean().optional(),
+      accessRequestAlerts: z.boolean().optional(),
+      securityAlerts: z.boolean().optional(),
+    });
+
+    try {
+      const validatedData = notificationSchema.parse(req.body);
+      
+      // For now, we'll just add these to the user's notificationPreferences object
+      // In a real implementation, this would update notification settings in a separate table
+      const updatedUser = await storage.updateUser(userId, { 
+        notificationPreferences: validatedData 
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Log the update
+      await storage.createAuditLog({
+        userId: user.id,
+        action: "notification_preferences_updated",
+        details: `User updated notification preferences`,
+        ipAddress: req.ip
+      });
+
+      res.json({
+        message: "Notification preferences updated",
+        preferences: updatedUser.notificationPreferences
+      });
+    } catch (error) {
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid notification data", errors: error.errors });
+      }
+      throw error;
+    }
   });
 
   const httpServer = createServer(app);
