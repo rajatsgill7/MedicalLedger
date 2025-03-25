@@ -5,9 +5,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { accessPurposes, accessDurations } from "@/lib/utils";
-import { Key } from "lucide-react";
-import { insertAccessRequestSchema } from "@shared/schema";
+import { Key, Search, User } from "lucide-react";
+import { insertAccessRequestSchema, User as UserType } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { useState } from "react";
 
 import {
   Dialog,
@@ -56,6 +57,14 @@ interface RequestAccessModalProps {
 export function RequestAccessModal({ isOpen, onClose }: RequestAccessModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Fetch all patients for the search
+  const { data: patients, isLoading: isLoadingPatients } = useQuery<UserType[]>({
+    queryKey: ['/api/patients'],
+    enabled: isOpen, // Only fetch when modal is open
+  });
 
   // Set up form with validation
   const form = useForm<FormValues>({
@@ -68,6 +77,13 @@ export function RequestAccessModal({ isOpen, onClose }: RequestAccessModalProps)
       limitedScope: false,
     },
   });
+
+  // Filter patients based on search query
+  const filteredPatients = patients?.filter(patient => 
+    patient.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    patient.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    patient.id.toString().includes(searchQuery)
+  ) || [];
 
   // Submit mutation
   const requestMutation = useMutation({
@@ -121,6 +137,65 @@ export function RequestAccessModal({ isOpen, onClose }: RequestAccessModalProps)
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-medium mb-2">Find a Patient</h3>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Input 
+                  placeholder="Search by name, email, or ID..." 
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setIsSearching(true);
+                  }}
+                />
+              </div>
+              
+              {/* Patient search results */}
+              {isSearching && (
+                <div className="mt-2 border rounded-md max-h-48 overflow-y-auto">
+                  {isLoadingPatients ? (
+                    <div className="p-4 text-center">
+                      <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-500">Loading patients...</p>
+                    </div>
+                  ) : filteredPatients.length > 0 ? (
+                    <div className="divide-y">
+                      {filteredPatients.map((patient) => (
+                        <div 
+                          key={patient.id} 
+                          className="p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-between"
+                          onClick={() => {
+                            form.setValue('patientId', patient.id);
+                            setSearchQuery(patient.fullName);
+                            setIsSearching(false);
+                          }}
+                        >
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                              <User className="h-4 w-4" />
+                            </div>
+                            <div className="ml-3">
+                              <p className="font-medium">{patient.fullName}</p>
+                              <p className="text-xs text-gray-500">{patient.email}</p>
+                            </div>
+                          </div>
+                          <span className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">
+                            ID: {patient.id}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-gray-500">
+                      No patients found matching your search
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
             <FormField
               control={form.control}
               name="patientId"

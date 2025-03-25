@@ -51,6 +51,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(sanitizedDoctors);
   });
   
+  app.get('/api/patients', isAuthenticated, hasRole([UserRole.DOCTOR, UserRole.ADMIN]), async (req, res) => {
+    // Get all users with role "patient"
+    const users = await storage.getAllUsers();
+    const patients = users.filter(user => user.role === UserRole.PATIENT);
+    
+    // Don't send passwords to client
+    const sanitizedPatients = patients.map(({ password, ...patient }) => patient);
+    res.json(sanitizedPatients);
+  });
+  
   // Medical records routes
   app.get('/api/records/:id', isAuthenticated, async (req, res) => {
     const recordId = parseInt(req.params.id);
