@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { useRole } from "@/hooks/use-role";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { 
   FolderSymlink, 
   Users, 
@@ -22,7 +23,8 @@ import {
   ShieldAlert,
   ClipboardList,
   Key,
-  Shield 
+  Shield,
+  Palette
 } from "lucide-react";
 import { X } from "lucide-react";
 
@@ -169,6 +171,17 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
               />
             </div>
           )}
+          
+          {/* Theme Settings */}
+          <div className="mt-6 border-t pt-6 px-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Palette className="h-5 w-5 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">Theme Settings</span>
+              </div>
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

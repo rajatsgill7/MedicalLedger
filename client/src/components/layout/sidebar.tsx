@@ -166,8 +166,19 @@ export function Sidebar() {
         )}
       </nav>
       
+      {/* Theme Settings */}
+      <div className="mt-6 mb-4 px-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Palette className="h-5 w-5 mr-2 text-muted-foreground" />
+            <span className="text-sm font-medium">Appearance</span>
+          </div>
+          <ThemeToggle />
+        </div>
+      </div>
+      
       {/* Help & Support Box */}
-      <div className="mt-8 rounded-lg bg-card p-4 shadow-sm border border-border">
+      <div className="mt-4 rounded-lg bg-card p-4 shadow-sm border border-border">
         <h3 className="text-sm font-medium text-primary flex items-center">
           <HelpCircle className="mr-2 h-5 w-5 text-primary" />
           Need Help?
