@@ -63,15 +63,15 @@ export function SearchFilters({
 
   return (
     <Card className="bg-white dark:bg-gray-800 shadow">
-      <CardContent className="bg-card text-card-foreground p-6 rounded-lg border border-border/40 mb-8"> {/*This line was changed */}
-        <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+      <CardContent className="bg-card text-card-foreground p-3 sm:p-4 md:p-6 rounded-lg border border-border/40 mb-4 sm:mb-6">
+        <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 h-4 w-4" />
+              <Search className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <Input 
                 type="text" 
                 placeholder="Search records..." 
-                className="pl-10"
+                className="pl-9 sm:pl-10 h-9 sm:h-10 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -79,11 +79,11 @@ export function SearchFilters({
 
             {showPatientSearch && setPatientNameSearch && (
               <div className="relative mt-2">
-                <Search className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 h-4 w-4" />
+                <Search className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <Input 
                   type="text" 
                   placeholder="Search by patient name..." 
-                  className="pl-10"
+                  className="pl-9 sm:pl-10 h-9 sm:h-10 text-sm"
                   value={patientNameSearch}
                   onChange={(e) => setPatientNameSearch(e.target.value)}
                 />
@@ -95,7 +95,7 @@ export function SearchFilters({
               value={recordType}
               onValueChange={setRecordType}
             >
-              <SelectTrigger className="w-full md:w-[180px]">
+              <SelectTrigger className="w-full md:w-[160px] h-9 sm:h-10 text-sm">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
@@ -111,7 +111,7 @@ export function SearchFilters({
                 value={doctorFilter}
                 onValueChange={setDoctorFilter}
               >
-                <SelectTrigger className="w-full md:w-[180px]">
+                <SelectTrigger className="w-full md:w-[160px] h-9 sm:h-10 text-sm">
                   <SelectValue placeholder="All Doctors" />
                 </SelectTrigger>
                 <SelectContent>
@@ -127,7 +127,7 @@ export function SearchFilters({
               value={dateRange}
               onValueChange={setDateRange}
             >
-              <SelectTrigger className="w-full md:w-[180px]">
+              <SelectTrigger className="w-full md:w-[160px] h-9 sm:h-10 text-sm">
                 <SelectValue placeholder="Time Range" />
               </SelectTrigger>
               <SelectContent>
@@ -141,11 +141,12 @@ export function SearchFilters({
             {hasFilters && (
               <Button 
                 variant="outline" 
-                size="icon"
+                size="sm"
                 onClick={resetFilters}
                 title="Clear filters"
+                className="h-9 sm:h-10 w-9 sm:w-10 p-0"
               >
-                <FilterX className="h-4 w-4" />
+                <FilterX className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
             )}
           </div>
