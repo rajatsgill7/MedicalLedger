@@ -62,8 +62,8 @@ export function SearchFilters({
                     dateRange !== "all";
 
   return (
-    <Card className="bg-white dark:bg-gray-800 shadow">
-      <CardContent className="bg-card text-card-foreground p-3 sm:p-4 md:p-6 rounded-lg border border-border/40 mb-4 sm:mb-6">
+    <Card className="bg-card shadow">
+      <CardContent className="p-3 sm:p-4 md:p-6 rounded-lg border border-border/40 mb-4 sm:mb-6">
         <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4">
           <div className="flex-1">
             <div className="relative">
@@ -71,7 +71,7 @@ export function SearchFilters({
               <Input 
                 type="text" 
                 placeholder="Search records..." 
-                className="pl-9 sm:pl-10 h-9 sm:h-10 text-sm"
+                className="pl-9 sm:pl-10 h-9 sm:h-10 text-sm w-full bg-background"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -83,7 +83,7 @@ export function SearchFilters({
                 <Input 
                   type="text" 
                   placeholder="Search by patient name..." 
-                  className="pl-9 sm:pl-10 h-9 sm:h-10 text-sm"
+                  className="pl-9 sm:pl-10 h-9 sm:h-10 text-sm w-full bg-background"
                   value={patientNameSearch}
                   onChange={(e) => setPatientNameSearch(e.target.value)}
                 />
@@ -95,7 +95,7 @@ export function SearchFilters({
               value={recordType}
               onValueChange={setRecordType}
             >
-              <SelectTrigger className="w-full md:w-[160px] h-9 sm:h-10 text-sm">
+              <SelectTrigger className="w-full md:w-[160px] h-9 sm:h-10 text-sm bg-background">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
@@ -111,7 +111,7 @@ export function SearchFilters({
                 value={doctorFilter}
                 onValueChange={setDoctorFilter}
               >
-                <SelectTrigger className="w-full md:w-[160px] h-9 sm:h-10 text-sm">
+                <SelectTrigger className="w-full md:w-[160px] h-9 sm:h-10 text-sm bg-background">
                   <SelectValue placeholder="All Doctors" />
                 </SelectTrigger>
                 <SelectContent>
@@ -127,7 +127,7 @@ export function SearchFilters({
               value={dateRange}
               onValueChange={setDateRange}
             >
-              <SelectTrigger className="w-full md:w-[160px] h-9 sm:h-10 text-sm">
+              <SelectTrigger className="w-full md:w-[160px] h-9 sm:h-10 text-sm bg-background">
                 <SelectValue placeholder="Time Range" />
               </SelectTrigger>
               <SelectContent>
@@ -144,7 +144,7 @@ export function SearchFilters({
                 size="sm"
                 onClick={resetFilters}
                 title="Clear filters"
-                className="h-9 sm:h-10 w-9 sm:w-10 p-0"
+                className="h-9 sm:h-10 w-9 sm:w-10 p-0 bg-background"
               >
                 <FilterX className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
