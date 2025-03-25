@@ -113,11 +113,14 @@ export default function SettingsPage() {
       const res = await apiRequest("PATCH", `/api/users/${user?.id}`, data);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedUser) => {
       toast({
         title: "Profile updated",
         description: "Your profile information has been updated successfully.",
       });
+      // Update the cache with the new user data
+      queryClient.setQueryData(['/api/user'], updatedUser);
+      // Also invalidate to ensure any future fetches are fresh
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     },
     onError: (error: Error) => {
@@ -164,12 +167,20 @@ export default function SettingsPage() {
       const res = await apiRequest("PATCH", `/api/users/${user?.id}/notifications`, data);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       toast({
         title: "Notifications updated",
         description: "Your notification preferences have been updated.",
       });
-      // Invalidate the user query to refresh the user data with updated notification preferences
+      // Update user data with new preferences
+      const currentUser = queryClient.getQueryData<User>(['/api/user']);
+      if (currentUser && response.preferences) {
+        queryClient.setQueryData(['/api/user'], {
+          ...currentUser,
+          notificationPreferences: response.preferences
+        });
+      }
+      // Also invalidate to ensure future fetches are fresh
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     },
     onError: (error: Error) => {
