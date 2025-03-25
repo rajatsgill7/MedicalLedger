@@ -5,7 +5,7 @@ import { UserRole } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Eye, EyeOff, SecurityIcon } from "lucide-react";
+import { Eye, EyeOff, Shield } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -127,7 +127,7 @@ export default function AuthPage() {
             <CardContent className="p-6">
               <div className="flex justify-center mb-6">
                 <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center">
-                  <SecurityIcon className="h-8 w-8 text-white" />
+                  <Shield className="h-8 w-8 text-white" />
                 </div>
               </div>
               

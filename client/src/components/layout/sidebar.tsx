@@ -13,7 +13,7 @@ import {
   ShieldAlert,
   ClipboardList,
   Key,
-  SecurityIcon 
+  Shield 
 } from "lucide-react";
 import { useRole } from "@/hooks/use-role";
 import { Button } from "@/components/ui/button";
@@ -132,7 +132,7 @@ export function Sidebar() {
               Access Control
             </NavItem>
             <NavItem
-              icon={<SecurityIcon className="mr-3 h-5 w-5" />}
+              icon={<Shield className="mr-3 h-5 w-5" />}
               href="/settings"
               active={isLinkActive("/settings")}
               onClick={() => setLocation("/settings")}

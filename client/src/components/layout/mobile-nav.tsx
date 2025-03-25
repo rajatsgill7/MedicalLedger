@@ -20,7 +20,7 @@ import {
   ShieldAlert,
   ClipboardList,
   Key,
-  SecurityIcon 
+  Shield 
 } from "lucide-react";
 import { X } from "lucide-react";
 
@@ -146,7 +146,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
               />
               <NavItem
                 label="Security Settings"
-                icon={<SecurityIcon className="mr-3 h-5 w-5" />}
+                icon={<Shield className="mr-3 h-5 w-5" />}
                 active={isActive("/settings")}
                 onClick={() => navigate("/settings")}
               />
