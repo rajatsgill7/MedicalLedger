@@ -140,10 +140,10 @@ export function RequestAccessModal({ isOpen, onClose }: RequestAccessModalProps)
             <div className="mb-4">
               <h3 className="text-lg font-medium mb-2">Find a Patient</h3>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
                 <Input 
                   placeholder="Search by name, email, or ID..." 
-                  className="pl-10"
+                  className="pl-10 transition-colors focus-ring"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -154,18 +154,18 @@ export function RequestAccessModal({ isOpen, onClose }: RequestAccessModalProps)
               
               {/* Patient search results */}
               {isSearching && (
-                <div className="mt-2 border rounded-md max-h-48 overflow-y-auto">
+                <div className="mt-2 border border-border/60 rounded-md max-h-48 overflow-y-auto shadow-dropdown">
                   {isLoadingPatients ? (
                     <div className="p-4 text-center">
                       <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-500">Loading patients...</p>
+                      <p className="text-sm text-muted-foreground">Loading patients...</p>
                     </div>
                   ) : filteredPatients.length > 0 ? (
-                    <div className="divide-y">
+                    <div className="divide-y divide-border/40">
                       {filteredPatients.map((patient) => (
                         <div 
                           key={patient.id} 
-                          className="p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-between"
+                          className="p-3 cursor-pointer hover:bg-secondary/50 transition-colors-200 flex items-center justify-between"
                           onClick={() => {
                             form.setValue('patientId', patient.id);
                             setSearchQuery(patient.fullName);
@@ -177,18 +177,18 @@ export function RequestAccessModal({ isOpen, onClose }: RequestAccessModalProps)
                               <User className="h-4 w-4" />
                             </div>
                             <div className="ml-3">
-                              <p className="font-medium">{patient.fullName}</p>
-                              <p className="text-xs text-gray-500">{patient.email}</p>
+                              <p className="font-medium text-foreground">{patient.fullName}</p>
+                              <p className="text-xs text-muted-foreground">{patient.email}</p>
                             </div>
                           </div>
-                          <span className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">
+                          <span className="text-xs font-mono bg-secondary/60 px-2 py-1 rounded-md text-muted-foreground">
                             ID: {patient.id}
                           </span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="p-4 text-center text-gray-500">
+                    <div className="p-4 text-center text-muted-foreground">
                       No patients found matching your search
                     </div>
                   )}

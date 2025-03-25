@@ -50,48 +50,48 @@ export const accessDurations = [
 export function getStatusBadgeColor(status: string) {
   switch (status.toLowerCase()) {
     case "approved":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      return "bg-success/10 border-success/20 text-success";
     case "pending":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+      return "bg-warning/10 border-warning/20 text-warning";
     case "denied":
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+      return "bg-destructive/10 border-destructive/20 text-destructive";
     case "expired":
-      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+      return "bg-muted/30 border-muted/30 text-muted-foreground";
     default:
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      return "bg-info/10 border-info/20 text-info";
   }
 }
 
 export function getRoleBadgeColor(role: string) {
   switch (role.toLowerCase()) {
     case "patient":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      return "bg-info/10 border-info/20 text-info";
     case "doctor":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      return "bg-success/10 border-success/20 text-success";
     case "admin":
-      return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      return "bg-primary/10 border-primary/20 text-primary";
     default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+      return "bg-muted/30 border-muted/30 text-muted-foreground";
   }
 }
 
 export function getRecordTypeBadgeColor(type: string) {
   switch (type.toLowerCase()) {
     case "lab results":
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+      return "bg-destructive/10 border-destructive/20 text-destructive";
     case "prescription":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      return "bg-success/10 border-success/20 text-success";
     case "imaging":
-      return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
+      return "bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/50";
     case "general checkup":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      return "bg-info/10 border-info/20 text-info";
     case "specialist consultation":
-      return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      return "bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/50";
     case "vaccination":
-      return "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200";
+      return "bg-teal-100 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800/50";
     case "surgical report":
-      return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+      return "bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800/50";
     default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+      return "bg-muted/30 border-muted/30 text-muted-foreground";
   }
 }
