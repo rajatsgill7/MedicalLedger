@@ -42,8 +42,8 @@ export function SearchFilters({
   // Reset all filters
   const resetFilters = () => {
     setSearchTerm("");
-    setRecordType("");
-    if (setDoctorFilter) setDoctorFilter("");
+    setRecordType("all-types");
+    if (setDoctorFilter) setDoctorFilter("all-doctors");
     setDateRange("all");
   };
 
@@ -75,7 +75,7 @@ export function SearchFilters({
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all-types">All Types</SelectItem>
                 {recordTypes.map(type => (
                   <SelectItem key={type} value={type}>{type}</SelectItem>
                 ))}
@@ -91,7 +91,7 @@ export function SearchFilters({
                   <SelectValue placeholder="All Doctors" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Doctors</SelectItem>
+                  <SelectItem value="all-doctors">All Doctors</SelectItem>
                   {doctorNames.map(name => (
                     <SelectItem key={name} value={name}>{name}</SelectItem>
                   ))}

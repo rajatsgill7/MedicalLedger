@@ -66,10 +66,10 @@ export default function PatientRecords() {
       record.notes?.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Record type filter
-    const matchesType = !recordType || record.recordType === recordType;
+    const matchesType = !recordType || recordType === "all-types" || record.recordType === recordType;
     
     // Doctor filter
-    const matchesDoctor = !doctorFilter || record.doctorName === doctorFilter;
+    const matchesDoctor = !doctorFilter || doctorFilter === "all-doctors" || record.doctorName === doctorFilter;
     
     // Date filter
     let matchesDate = true;
