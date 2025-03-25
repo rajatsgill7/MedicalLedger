@@ -2,7 +2,8 @@ import {
   users, User, InsertUser, 
   records, Record, InsertRecord,
   accessRequests, AccessRequest, InsertAccessRequest,
-  auditLogs, AuditLog, InsertAuditLog, UserRole
+  auditLogs, AuditLog, InsertAuditLog, UserRole,
+  NotificationPreferences
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
