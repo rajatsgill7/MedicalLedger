@@ -51,7 +51,7 @@ export interface IStorage {
 
 // Database storage implementation
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({
@@ -83,10 +83,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    // Ensure role is always set
+    const role = insertUser.role || UserRole.PATIENT;
+    // Ensure specialty is set to null if not provided
+    const specialty = insertUser.specialty === undefined ? null : insertUser.specialty;
+    
     const [user] = await db
       .insert(users)
       .values({
         ...insertUser,
+        role,
+        specialty,
         createdAt: new Date()
       })
       .returning();
@@ -128,10 +135,21 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createRecord(insertRecord: InsertRecord): Promise<Record> {
+    // Set default values for fields
+    const doctorId = insertRecord.doctorId === undefined ? null : insertRecord.doctorId;
+    const doctorName = insertRecord.doctorName === undefined ? null : insertRecord.doctorName;
+    const notes = insertRecord.notes === undefined ? null : insertRecord.notes;
+    const fileUrl = insertRecord.fileUrl === undefined ? null : insertRecord.fileUrl;
+    
     const [record] = await db
       .insert(records)
       .values({
         ...insertRecord,
+        doctorId,
+        doctorName,
+        notes,
+        fileUrl,
+        verified: false, // Default to false if not provided
         createdAt: new Date()
       })
       .returning();
@@ -200,16 +218,20 @@ export class DatabaseStorage implements IStorage {
   
   async createAccessRequest(insertRequest: InsertAccessRequest): Promise<AccessRequest> {
     // Calculate expiry date if approved and duration is set
-    let expiryDate: Date | undefined = undefined;
+    let expiryDate: Date | null = null;
     if (insertRequest.status === "approved" && insertRequest.duration) {
       expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + insertRequest.duration);
     }
     
+    // Set default values for optional fields
+    const notes = insertRequest.notes === undefined ? null : insertRequest.notes;
+    
     const [request] = await db
       .insert(accessRequests)
       .values({
         ...insertRequest,
+        notes,
         requestDate: new Date(),
         expiryDate
       })
@@ -247,10 +269,16 @@ export class DatabaseStorage implements IStorage {
   
   // Audit log operations
   async createAuditLog(insertLog: InsertAuditLog): Promise<AuditLog> {
+    // Set default values for optional fields
+    const details = insertLog.details === undefined ? null : insertLog.details;
+    const ipAddress = insertLog.ipAddress === undefined ? null : insertLog.ipAddress;
+    
     const [log] = await db
       .insert(auditLogs)
       .values({
         ...insertLog,
+        details,
+        ipAddress,
         timestamp: new Date()
       })
       .returning();
@@ -284,7 +312,7 @@ export class MemStorage implements IStorage {
   private recordIdCounter: number;
   private accessRequestIdCounter: number;
   private auditLogIdCounter: number;
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 
   constructor() {
     this.usersMap = new Map();
@@ -330,7 +358,18 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
     const createdAt = new Date();
-    const user: User = { ...insertUser, id, createdAt };
+    // Ensure role is always set
+    const role = insertUser.role || UserRole.PATIENT;
+    // Ensure specialty is set to null if not provided
+    const specialty = insertUser.specialty === undefined ? null : insertUser.specialty;
+    
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      createdAt, 
+      role,
+      specialty
+    };
     this.usersMap.set(id, user);
     return user;
   }
@@ -365,7 +404,24 @@ export class MemStorage implements IStorage {
   async createRecord(insertRecord: InsertRecord): Promise<Record> {
     const id = this.recordIdCounter++;
     const createdAt = new Date();
-    const record: Record = { ...insertRecord, id, createdAt };
+    
+    // Set default values for fields
+    const doctorId = insertRecord.doctorId === undefined ? null : insertRecord.doctorId;
+    const doctorName = insertRecord.doctorName === undefined ? null : insertRecord.doctorName;
+    const notes = insertRecord.notes === undefined ? null : insertRecord.notes;
+    const fileUrl = insertRecord.fileUrl === undefined ? null : insertRecord.fileUrl;
+    
+    const record: Record = { 
+      ...insertRecord, 
+      id, 
+      createdAt,
+      doctorId,
+      doctorName,
+      notes,
+      fileUrl,
+      verified: false // Default to false if not provided
+    };
+    
     this.recordsMap.set(id, record);
     return record;
   }
@@ -454,20 +510,42 @@ export class MemStorage implements IStorage {
   async createAuditLog(insertLog: InsertAuditLog): Promise<AuditLog> {
     const id = this.auditLogIdCounter++;
     const timestamp = new Date();
-    const log: AuditLog = { ...insertLog, id, timestamp };
+    
+    // Set default values for optional fields
+    const details = insertLog.details === undefined ? null : insertLog.details;
+    const ipAddress = insertLog.ipAddress === undefined ? null : insertLog.ipAddress;
+    
+    const log: AuditLog = { 
+      ...insertLog, 
+      id, 
+      timestamp,
+      details,
+      ipAddress
+    };
+    
     this.auditLogsMap.set(id, log);
     return log;
   }
   
   async getAuditLogs(): Promise<AuditLog[]> {
     return Array.from(this.auditLogsMap.values())
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      .sort((a, b) => {
+        // Handle null timestamps
+        const aTime = a.timestamp ? a.timestamp.getTime() : 0;
+        const bTime = b.timestamp ? b.timestamp.getTime() : 0;
+        return bTime - aTime;
+      });
   }
   
   async getAuditLogsByUserId(userId: number): Promise<AuditLog[]> {
     return Array.from(this.auditLogsMap.values())
       .filter(log => log.userId === userId)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      .sort((a, b) => {
+        // Handle null timestamps
+        const aTime = a.timestamp ? a.timestamp.getTime() : 0;
+        const bTime = b.timestamp ? b.timestamp.getTime() : 0;
+        return bTime - aTime;
+      });
   }
 }
 
