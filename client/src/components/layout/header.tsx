@@ -33,20 +33,20 @@ export function Header() {
 
   return (
     <header className="bg-background shadow-sm sticky top-0 z-40 border-b transition-colors backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <div className="w-9 h-9 rounded-md bg-primary flex items-center justify-center mr-3 shadow-sm">
+              <div className="w-9 h-9 rounded-md bg-primary flex items-center justify-center mr-2 shadow-sm">
                 <Shield className="h-5 w-5 text-white" />
               </div>
-              <h1 className="text-xl font-semibold text-foreground">
+              <h1 className="text-lg md:text-xl font-semibold text-foreground truncate max-w-[230px] sm:max-w-none">
                 {getAppTitle()}
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

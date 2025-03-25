@@ -148,13 +148,15 @@ export default function DoctorPatients() {
 
   return (
     <MainLayout>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Patients</h1>
-        <div className="flex mt-4 sm:mt-0 space-x-2">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">My Patients</h1>
+        <div className="flex flex-wrap w-full sm:w-auto gap-2 mt-3 sm:mt-0">
           <Button 
             variant="outline"
             onClick={() => refetch()}
             disabled={isLoadingAccess}
+            className="flex-grow sm:flex-grow-0"
+            size="sm"
           >
             {isLoadingAccess ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -170,33 +172,35 @@ export default function DoctorPatients() {
           </Button>
           <Button 
             onClick={() => setRequestModalOpen(true)}
+            className="flex-grow sm:flex-grow-0"
+            size="sm"
           >
             <LinkIcon className="mr-2 h-4 w-4" />
-            Request Patient Access
+            Request Access
           </Button>
         </div>
       </div>
 
       {/* Search and filters */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
-        <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+      <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow mb-4 sm:mb-6">
+        <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-3">
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input 
                 placeholder="Search patients..." 
-                className="pl-10"
+                className="pl-9 h-9 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 w-full md:w-auto">
             <Select 
               value={statusFilter} 
               onValueChange={setStatusFilter}
             >
-              <SelectTrigger className="w-full md:w-[200px]">
+              <SelectTrigger className="w-full md:w-[160px] h-9 text-sm">
                 <SelectValue placeholder="Access Status" />
               </SelectTrigger>
               <SelectContent>
@@ -211,7 +215,7 @@ export default function DoctorPatients() {
               value={sortOrder} 
               onValueChange={setSortOrder}
             >
-              <SelectTrigger className="w-full md:w-[200px]">
+              <SelectTrigger className="w-full md:w-[160px] h-9 text-sm">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
               <SelectContent>
@@ -226,26 +230,26 @@ export default function DoctorPatients() {
       </div>
 
       {/* Patients Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {isLoadingAccess ? (
           // Loading state
           Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-              <div className="p-5">
+              <div className="p-4">
                 <div className="flex justify-between">
                   <div className="flex items-center">
-                    <Skeleton className="h-12 w-12 rounded-full" />
-                    <div className="ml-4">
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-4 w-24 mt-1" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="ml-3">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-3 w-20 mt-1" />
                     </div>
                   </div>
-                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-5 w-20" />
                 </div>
                 
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
               </div>
             </div>
@@ -253,17 +257,17 @@ export default function DoctorPatients() {
         ) : sortedPatients.length > 0 ? (
           sortedPatients.map((patient) => (
             <div key={patient.id} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-              <div className="p-5">
-                <div className="flex justify-between">
+              <div className="p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div className="flex items-center">
-                    <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center">
-                      <User className="h-6 w-6" />
+                    <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
+                      <User className="h-5 w-5" />
                     </div>
-                    <div className="ml-4">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    <div className="ml-3">
+                      <h3 className="text-base font-medium text-gray-900 dark:text-white truncate max-w-[180px]">
                         {patient.fullName}
                       </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         ID: P-{patient.id.toString().padStart(5, '0')}
                       </p>
                     </div>
@@ -271,7 +275,7 @@ export default function DoctorPatients() {
                   {patient.accessStatus === "active" && (
                     <Badge 
                       variant="outline"
-                      className="bg-green-100 border-green-300 text-green-800 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300 rounded-full px-3 py-1"
+                      className="bg-green-100 border-green-300 text-green-800 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300 rounded-full px-2 py-0.5 text-xs"
                     >
                       Active Access
                     </Badge>
@@ -279,7 +283,7 @@ export default function DoctorPatients() {
                   {patient.accessStatus === "pending" && (
                     <Badge 
                       variant="outline"
-                      className="bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/50 dark:border-yellow-700 dark:text-yellow-300 rounded-full px-3 py-1"
+                      className="bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/50 dark:border-yellow-700 dark:text-yellow-300 rounded-full px-2 py-0.5 text-xs"
                     >
                       Pending Approval
                     </Badge>
@@ -287,7 +291,7 @@ export default function DoctorPatients() {
                   {patient.accessStatus === "expired" && (
                     <Badge 
                       variant="outline"
-                      className="bg-gray-100 border-gray-300 text-gray-800 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 rounded-full px-3 py-1"
+                      className="bg-gray-100 border-gray-300 text-gray-800 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 rounded-full px-2 py-0.5 text-xs"
                     >
                       Expired
                     </Badge>
@@ -295,14 +299,14 @@ export default function DoctorPatients() {
                   {patient.accessStatus === "none" && (
                     <Badge 
                       variant="outline"
-                      className="bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/50 dark:border-blue-700 dark:text-blue-300 rounded-full px-3 py-1"
+                      className="bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/50 dark:border-blue-700 dark:text-blue-300 rounded-full px-2 py-0.5 text-xs"
                     >
                       No Access
                     </Badge>
                   )}
                 </div>
                 
-                <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
                   {patient.accessStatus === "active" && patient.accessUntil && (
                     <div>
                       <p className="text-gray-500 dark:text-gray-400">Access Until</p>
@@ -325,21 +329,25 @@ export default function DoctorPatients() {
                   </div>
                 </div>
                 
-                <div className="mt-4">
+                <div className="mt-3">
                   {patient.accessStatus === "active" ? (
                     <Button 
                       variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
                       onClick={() => handleViewRecords(patient.id)}
                     >
-                      <Eye className="mr-2 h-4 w-4" />
+                      <Eye className="mr-1 h-3 w-3" />
                       View Records
                     </Button>
                   ) : (
                     <Button 
                       variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
                       onClick={() => setRequestModalOpen(true)}
                     >
-                      <LinkIcon className="mr-2 h-4 w-4" />
+                      <LinkIcon className="mr-1 h-3 w-3" />
                       Request Access
                     </Button>
                   )}
