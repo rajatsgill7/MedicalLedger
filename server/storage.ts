@@ -188,9 +188,11 @@ export class DatabaseStorage implements IStorage {
       ? await db.select().from(users).where(
           and(
             eq(users.role, UserRole.DOCTOR),
-            users.id.in(doctorIds)
+            // Use in operator differently as it depends on the Drizzle version
+            // We'll fetch all doctors and filter them in memory
+            eq(users.role, UserRole.DOCTOR)
           )
-        )
+        ).then(allDoctors => allDoctors.filter(doctor => doctorIds.includes(doctor.id)))
       : [];
     
     // Create doctor lookup map

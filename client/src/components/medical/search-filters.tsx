@@ -48,7 +48,10 @@ export function SearchFilters({
   };
 
   // Check if any filters are applied
-  const hasFilters = searchTerm || recordType || doctorFilter || dateRange !== "all";
+  const hasFilters = searchTerm || 
+                    (recordType && recordType !== "all-types") || 
+                    (doctorFilter && doctorFilter !== "all-doctors") || 
+                    dateRange !== "all";
 
   return (
     <Card className="bg-white dark:bg-gray-800 shadow">
