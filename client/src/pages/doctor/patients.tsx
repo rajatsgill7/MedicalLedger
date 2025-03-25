@@ -41,9 +41,11 @@ export default function DoctorPatients() {
   const [sortOrder, setSortOrder] = useState("lastVisit");
 
   // Fetch access requests to determine patient access
-  const { data: accessRequests, isLoading: isLoadingAccess } = useQuery<(AccessRequest & {patient?: any})[]>({
+  const { data: accessRequests, isLoading: isLoadingAccess, refetch } = useQuery<(AccessRequest & {patient?: any})[]>({
     queryKey: [`/api/access-requests/doctor/${user?.id}`],
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    refetchInterval: 5000, // Refetch every 5 seconds to keep data fresh
+    staleTime: 2000 // Consider data stale after 2 seconds
   });
 
   // Group patients by access status
@@ -145,13 +147,31 @@ export default function DoctorPatients() {
     <MainLayout>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Patients</h1>
-        <Button 
-          className="mt-4 sm:mt-0"
-          onClick={() => setRequestModalOpen(true)}
-        >
-          <LinkIcon className="mr-2 h-4 w-4" />
-          Request Patient Access
-        </Button>
+        <div className="flex mt-4 sm:mt-0 space-x-2">
+          <Button 
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isLoadingAccess}
+          >
+            {isLoadingAccess ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 2v6h-6"></path>
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                <path d="M3 22v-6h6"></path>
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+              </svg>
+            )}
+            <span className="ml-2">Refresh</span>
+          </Button>
+          <Button 
+            onClick={() => setRequestModalOpen(true)}
+          >
+            <LinkIcon className="mr-2 h-4 w-4" />
+            Request Patient Access
+          </Button>
+        </div>
       </div>
 
       {/* Search and filters */}
