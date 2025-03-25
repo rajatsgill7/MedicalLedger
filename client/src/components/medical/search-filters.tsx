@@ -25,6 +25,9 @@ interface SearchFiltersProps {
   setDateRange: (value: string) => void;
   doctorNames?: string[];
   showDoctorFilter?: boolean;
+  patientNameSearch?: string;
+  setPatientNameSearch?: (value: string) => void;
+  showPatientSearch?: boolean;
 }
 
 export function SearchFilters({
@@ -37,13 +40,17 @@ export function SearchFilters({
   dateRange,
   setDateRange,
   doctorNames = [],
-  showDoctorFilter = false
+  showDoctorFilter = false,
+  patientNameSearch = "",
+  setPatientNameSearch,
+  showPatientSearch = false
 }: SearchFiltersProps) {
   // Reset all filters
   const resetFilters = () => {
     setSearchTerm("");
     setRecordType("all-types");
     if (setDoctorFilter) setDoctorFilter("all-doctors");
+    if (setPatientNameSearch) setPatientNameSearch("");
     setDateRange("all");
   };
 
@@ -51,6 +58,7 @@ export function SearchFilters({
   const hasFilters = searchTerm || 
                     (recordType && recordType !== "all-types") || 
                     (doctorFilter && doctorFilter !== "all-doctors") || 
+                    (patientNameSearch && patientNameSearch !== "") ||
                     dateRange !== "all";
 
   return (
@@ -68,6 +76,19 @@ export function SearchFilters({
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            
+            {showPatientSearch && setPatientNameSearch && (
+              <div className="relative mt-2">
+                <Search className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 h-4 w-4" />
+                <Input 
+                  type="text" 
+                  placeholder="Search by patient name..." 
+                  className="pl-10"
+                  value={patientNameSearch}
+                  onChange={(e) => setPatientNameSearch(e.target.value)}
+                />
+              </div>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             <Select

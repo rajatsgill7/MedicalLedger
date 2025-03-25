@@ -43,6 +43,7 @@ export default function DoctorMedicalRecords() {
   const [recordType, setRecordType] = useState<string>("");
   const [dateRange, setDateRange] = useState<string>("all");
   const [patientName, setPatientName] = useState<string>("");
+  const [patientNameSearch, setPatientNameSearch] = useState<string>("");
   const [isBackToPatients, setIsBackToPatients] = useState<boolean>(false);
   // Use useLocation for navigation
   const [_, setLocation] = useLocation();
@@ -179,6 +180,9 @@ export default function DoctorMedicalRecords() {
         dateRange={dateRange}
         setDateRange={setDateRange}
         showDoctorFilter={false}
+        patientNameSearch={patientNameSearch}
+        setPatientNameSearch={setPatientNameSearch}
+        showPatientSearch={true}
       />
 
       {/* Records List */}
