@@ -25,11 +25,14 @@ export function Sidebar() {
   const isLinkActive = (path: string) => location === path;
 
   return (
-    <aside className="hidden md:block w-64 mr-8">
-      <nav className="space-y-1">
+    <aside className="hidden md:flex flex-col w-64 mr-8 h-screen sticky top-0 pt-4 pr-2 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 space-y-1">
         {/* Patient navigation */}
         {isPatient && (
           <div>
+            <div className="px-3 py-2 mb-2 text-xs font-semibold text-muted-foreground tracking-wider">
+              PATIENT DASHBOARD
+            </div>
             <NavItem
               icon={<FolderSymlink className="mr-3 h-5 w-5" />}
               href="/patient/records"
@@ -69,6 +72,9 @@ export function Sidebar() {
         {/* Doctor navigation */}
         {isDoctor && (
           <div>
+            <div className="px-3 py-2 mb-2 text-xs font-semibold text-muted-foreground tracking-wider">
+              DOCTOR DASHBOARD
+            </div>
             <NavItem
               icon={<Group className="mr-3 h-5 w-5" />}
               href="/doctor/patients"
@@ -107,6 +113,9 @@ export function Sidebar() {
         {/* Admin navigation */}
         {isAdmin && (
           <div>
+            <div className="px-3 py-2 mb-2 text-xs font-semibold text-muted-foreground tracking-wider">
+              ADMIN DASHBOARD
+            </div>
             <NavItem
               icon={<ShieldAlert className="mr-3 h-5 w-5" />}
               href="/admin/user-management"
@@ -144,17 +153,18 @@ export function Sidebar() {
       </nav>
       
       {/* Help & Support Box */}
-      <div className="mt-8 rounded-lg bg-blue-50 dark:bg-gray-800 p-4 shadow-sm">
-        <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 flex items-center">
-          <HelpCircle className="mr-2 h-5 w-5 text-blue-500 dark:text-blue-400" />
+      <div className="mt-8 rounded-lg bg-card p-4 shadow-sm border border-border">
+        <h3 className="text-sm font-medium text-primary flex items-center">
+          <HelpCircle className="mr-2 h-5 w-5 text-primary" />
           Need Help?
         </h3>
-        <p className="mt-2 text-sm text-blue-700 dark:text-blue-200">
+        <p className="mt-2 text-sm text-muted-foreground">
           Contact our support team for assistance with your account or technical issues.
         </p>
         <Button 
-          variant="outline" 
-          className="mt-3 w-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 border-none"
+          variant="outline"
+          size="sm"
+          className="mt-3 w-full font-medium border-primary/20 hover:bg-primary/5"
         >
           Contact Support
         </Button>
@@ -177,10 +187,10 @@ function NavItem({ icon, href, active, onClick, children, badge }: NavItemProps)
     <Button
       variant={active ? "default" : "ghost"}
       className={cn(
-        "w-full justify-start text-sm mb-1",
+        "w-full justify-start text-sm mb-1 transition-all duration-200 font-medium",
         active 
-          ? "bg-primary text-white" 
-          : "text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+          ? "bg-primary text-primary-foreground shadow-sm" 
+          : "text-muted-foreground hover:text-foreground hover:bg-muted"
       )}
       onClick={onClick}
     >
