@@ -29,8 +29,7 @@ export const users = pgTable("users", {
   role: text("role").notNull().default(UserRole.PATIENT),
   specialty: text("specialty"), // For doctors
   createdAt: timestamp("created_at").defaultNow(),
-  // For Postgres, we would use JSON type here, but for in-memory usage 
-  // we'll just manually manage the notificationPreferences as a property
+  notificationPreferences: text("notification_preferences"), // Stored as JSON string
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
