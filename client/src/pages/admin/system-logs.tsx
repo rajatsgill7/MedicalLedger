@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MainLayout } from "@/components/layout/main-layout";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +12,13 @@ import {
   Eye,
   Clock,
   User,
-  FileText
+  FileText,
+  ChevronRight,
+  X,
+  Globe,
+  Calendar,
+  Hash,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +41,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
 import {
   Pagination,
   PaginationContent,
@@ -105,6 +119,8 @@ export default function AdminSystemLogs() {
   const [actionFilter, setActionFilter] = useState("all");
   const [timeRange, setTimeRange] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedLog, setSelectedLog] = useState<LogWithUser | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const itemsPerPage = 15;
 
   // Fetch all audit logs
