@@ -187,14 +187,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    const userList = await db.select().from(users);
+    
+    // Add default notification preferences to all users
+    return userList.map(user => ({
+      ...user,
+      notificationPreferences: {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      }
+    }));
   }
   
   async getDoctors(): Promise<User[]> {
-    return await db
+    const doctors = await db
       .select()
       .from(users)
       .where(eq(users.role, UserRole.DOCTOR));
+      
+    // Add default notification preferences to all doctors
+    return doctors.map(doctor => ({
+      ...doctor,
+      notificationPreferences: {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      }
+    }));
   }
   
   // Record operations
@@ -455,19 +477,60 @@ export class MemStorage implements IStorage {
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.usersMap.get(id);
+    const user = this.usersMap.get(id);
+    if (!user) return undefined;
+    
+    // Get notification preferences or set defaults
+    if (!user.notificationPreferences) {
+      user.notificationPreferences = {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      };
+    }
+    
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.usersMap.values()).find(
+    const user = Array.from(this.usersMap.values()).find(
       (user) => user.username.toLowerCase() === username.toLowerCase()
     );
+    
+    if (!user) return undefined;
+    
+    // Get notification preferences or set defaults
+    if (!user.notificationPreferences) {
+      user.notificationPreferences = {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      };
+    }
+    
+    return user;
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.usersMap.values()).find(
+    const user = Array.from(this.usersMap.values()).find(
       (user) => user.email.toLowerCase() === email.toLowerCase()
     );
+    
+    if (!user) return undefined;
+    
+    // Get notification preferences or set defaults
+    if (!user.notificationPreferences) {
+      user.notificationPreferences = {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      };
+    }
+    
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -483,7 +546,13 @@ export class MemStorage implements IStorage {
       id, 
       createdAt, 
       role,
-      specialty
+      specialty,
+      notificationPreferences: {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      }
     };
     this.usersMap.set(id, user);
     return user;
@@ -493,7 +562,20 @@ export class MemStorage implements IStorage {
     const user = this.usersMap.get(id);
     if (!user) return undefined;
     
-    const updatedUser = { ...user, ...update };
+    // Handle notification preferences separately, similar to database storage
+    const { notificationPreferences, ...otherUpdates } = update;
+    
+    // Apply regular updates
+    const updatedUser = { ...user, ...otherUpdates };
+    
+    // Apply notification preferences updates if provided
+    if (notificationPreferences) {
+      updatedUser.notificationPreferences = {
+        ...user.notificationPreferences,
+        ...notificationPreferences
+      };
+    }
+    
     this.usersMap.set(id, updatedUser);
     return updatedUser;
   }
