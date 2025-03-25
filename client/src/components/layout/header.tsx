@@ -33,21 +33,21 @@ export function Header() {
   };
 
   return (
-    <header className="bg-card shadow-md sticky top-0 z-40 border-b transition-colors">
+    <header className="bg-background shadow-sm sticky top-0 z-40 border-b transition-colors backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center mr-2">
+              <div className="w-9 h-9 rounded-md bg-primary flex items-center justify-center mr-3 shadow-sm">
                 <Shield className="h-5 w-5 text-white" />
               </div>
-              <h1 className="text-xl font-semibold">
+              <h1 className="text-xl font-semibold text-foreground">
                 {getAppTitle()}
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <ThemeToggle />
 
             {user && (
@@ -55,17 +55,17 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 hover:bg-muted transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 text-primary flex items-center justify-center">
                       <span className="text-sm font-medium">
                         {user.fullName.split(" ").map(name => name[0]).join("")}
                       </span>
                     </div>
-                    <span className="ml-2 text-sm font-medium hidden sm:block">
+                    <span className="ml-2 text-sm font-medium hidden sm:block text-foreground">
                       {user.fullName}
                     </span>
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

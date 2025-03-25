@@ -42,45 +42,50 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="left" className="w-[300px] sm:w-[350px]">
-        <SheetHeader className="flex justify-between items-center">
-          <SheetTitle>Menu</SheetTitle>
+      <SheetContent side="left" className="w-[300px] sm:w-[350px] border-r">
+        <SheetHeader className="flex justify-between items-center border-b pb-4 mb-1">
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center mr-2">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
+            <SheetTitle className="text-foreground">MediVault</SheetTitle>
+          </div>
           <SheetClose asChild>
-            <Button variant="ghost" size="icon">
-              <X className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-muted">
+              <X className="h-4 w-4 text-muted-foreground" />
             </Button>
           </SheetClose>
         </SheetHeader>
         
-        <div className="py-4 space-y-4">
+        <div className="py-3 space-y-6">
           {/* Patient navigation */}
           {isPatient && (
             <div className="space-y-1">
-              <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Patient Portal
               </h3>
               <NavItem
                 label="My Records"
-                icon={<FolderSymlink className="mr-3 h-5 w-5" />}
+                icon={<FolderSymlink className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/patient/records")}
                 onClick={() => navigate("/patient/records")}
               />
               <NavItem
                 label="My Doctors"
-                icon={<Users className="mr-3 h-5 w-5" />}
+                icon={<Users className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/patient/doctors")}
                 onClick={() => navigate("/patient/doctors")}
               />
               <NavItem
                 label="Access Requests"
-                icon={<LockKeyhole className="mr-3 h-5 w-5" />}
+                icon={<LockKeyhole className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/patient/access-requests")}
                 onClick={() => navigate("/patient/access-requests")}
                 badge={2}
               />
               <NavItem
                 label="Security Settings"
-                icon={<Settings className="mr-3 h-5 w-5" />}
+                icon={<Settings className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/settings")}
                 onClick={() => navigate("/settings")}
               />
@@ -90,30 +95,30 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           {/* Doctor navigation */}
           {isDoctor && (
             <div className="space-y-1">
-              <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Healthcare Provider
               </h3>
               <NavItem
                 label="My Patients"
-                icon={<Group className="mr-3 h-5 w-5" />}
+                icon={<Group className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/doctor/patients")}
                 onClick={() => navigate("/doctor/patients")}
               />
               <NavItem
                 label="Request Access"
-                icon={<LinkIcon className="mr-3 h-5 w-5" />}
+                icon={<LinkIcon className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/doctor/request-access")}
                 onClick={() => navigate("/doctor/request-access")}
               />
               <NavItem
                 label="Medical Records"
-                icon={<Folder className="mr-3 h-5 w-5" />}
+                icon={<Folder className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/doctor/medical-records")}
                 onClick={() => navigate("/doctor/medical-records")}
               />
               <NavItem
                 label="Profile Settings"
-                icon={<UserCircle className="mr-3 h-5 w-5" />}
+                icon={<UserCircle className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/settings")}
                 onClick={() => navigate("/settings")}
               />
@@ -123,30 +128,30 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           {/* Admin navigation */}
           {isAdmin && (
             <div className="space-y-1">
-              <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 System Administration
               </h3>
               <NavItem
                 label="User Management"
-                icon={<ShieldAlert className="mr-3 h-5 w-5" />}
+                icon={<ShieldAlert className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/admin/user-management")}
                 onClick={() => navigate("/admin/user-management")}
               />
               <NavItem
                 label="System Logs"
-                icon={<ClipboardList className="mr-3 h-5 w-5" />}
+                icon={<ClipboardList className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/admin/system-logs")}
                 onClick={() => navigate("/admin/system-logs")}
               />
               <NavItem
                 label="Access Control"
-                icon={<Key className="mr-3 h-5 w-5" />}
+                icon={<Key className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/admin/access-control")}
                 onClick={() => navigate("/admin/access-control")}
               />
               <NavItem
                 label="Security Settings"
-                icon={<Shield className="mr-3 h-5 w-5" />}
+                icon={<Shield className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/settings")}
                 onClick={() => navigate("/settings")}
               />
@@ -169,14 +174,18 @@ type NavItemProps = {
 function NavItem({ label, icon, active, onClick, badge }: NavItemProps) {
   return (
     <Button
-      variant={active ? "default" : "ghost"}
-      className={`w-full justify-start text-sm ${active ? "bg-primary text-white" : ""}`}
+      variant={active ? "secondary" : "ghost"}
+      className={`w-full justify-start text-sm mb-1 h-10 px-3 font-medium transition-colors
+        ${active 
+          ? "bg-muted/80 text-primary dark:text-primary dark:bg-muted/30 dark:hover:bg-muted/40" 
+          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+        }`}
       onClick={onClick}
     >
       {icon}
       {label}
       {badge && (
-        <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+        <span className="ml-auto bg-red-500/90 text-white text-xs font-medium px-2 py-0.5 rounded-full">
           {badge}
         </span>
       )}

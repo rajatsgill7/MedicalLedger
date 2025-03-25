@@ -24,6 +24,14 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 206 100% 50%;
     --radius: 0.5rem;
+    
+    /* Custom colors */
+    --success: 142 70% 45%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+    --info: 206 100% 50%;
+    --info-foreground: 210 40% 98%;
   }
  
   .dark {
@@ -46,6 +54,14 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 206 100% 50%;
+    
+    /* Custom colors - dark mode */
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+    --info: 206 100% 40%;
+    --info-foreground: 210 40% 98%;
   }
 
   * {
@@ -76,5 +92,57 @@
   .no-scrollbar {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
+  }
+  
+  /* Custom transition utilities */
+  .transition-all-200 {
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .transition-transform-200 {
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .transition-opacity-200 {
+    transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Custom shadow utilities for dark mode */
+  .shadow-card {
+    @apply shadow-md dark:shadow-[0_4px_12px_0_rgba(0,0,0,0.5)];
+  }
+  
+  .shadow-dropdown {
+    @apply shadow-lg dark:shadow-[0_4px_16px_0_rgba(0,0,0,0.6)];
+  }
+  
+  /* Glass morphism effect */
+  .glass-effect {
+    @apply bg-white/80 dark:bg-gray-950/80 backdrop-blur-md backdrop-saturate-150;
+  }
+  
+  /* Success/warning/info colors */
+  .text-success {
+    color: hsl(var(--success));
+  }
+  
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+  
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+  
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+  
+  .text-info {
+    color: hsl(var(--info));
+  }
+  
+  .bg-info {
+    background-color: hsl(var(--info));
   }
 }
