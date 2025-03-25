@@ -271,7 +271,7 @@ export default function DoctorPatients() {
                   {patient.accessStatus === "active" && (
                     <Badge 
                       variant="outline"
-                      className="bg-success/10 border-success/20 text-success rounded-full px-3 py-1"
+                      className="bg-green-100 border-green-300 text-green-800 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300 rounded-full px-3 py-1"
                     >
                       Active Access
                     </Badge>
@@ -279,7 +279,7 @@ export default function DoctorPatients() {
                   {patient.accessStatus === "pending" && (
                     <Badge 
                       variant="outline"
-                      className="bg-warning/10 border-warning/20 text-warning rounded-full px-3 py-1"
+                      className="bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/50 dark:border-yellow-700 dark:text-yellow-300 rounded-full px-3 py-1"
                     >
                       Pending Approval
                     </Badge>
@@ -287,7 +287,7 @@ export default function DoctorPatients() {
                   {patient.accessStatus === "expired" && (
                     <Badge 
                       variant="outline"
-                      className="bg-muted/30 border-muted/30 text-muted-foreground rounded-full px-3 py-1"
+                      className="bg-gray-100 border-gray-300 text-gray-800 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 rounded-full px-3 py-1"
                     >
                       Expired
                     </Badge>
@@ -295,7 +295,7 @@ export default function DoctorPatients() {
                   {patient.accessStatus === "none" && (
                     <Badge 
                       variant="outline"
-                      className="border border-blue-300 dark:border-blue-800 bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-full px-3 py-1"
+                      className="bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/50 dark:border-blue-700 dark:text-blue-300 rounded-full px-3 py-1"
                     >
                       No Access
                     </Badge>
