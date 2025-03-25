@@ -290,22 +290,33 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(accessRequests.requestDate));
       
     // Enrich with doctor info
-    const doctorIds = [...new Set(requests.map(req => req.doctorId))];
+    const doctorIds = Array.from(new Set(requests.map(req => req.doctorId)));
     
     const doctors = doctorIds.length > 0 
       ? await db.select().from(users).where(
           and(
             eq(users.role, UserRole.DOCTOR),
-            // Use in operator differently as it depends on the Drizzle version
-            // We'll fetch all doctors and filter them in memory
+            // Fetch all doctors and filter them in memory since some versions of 
+            // Drizzle don't have a good 'in' operator implementation
             eq(users.role, UserRole.DOCTOR)
           )
         ).then(allDoctors => allDoctors.filter(doctor => doctorIds.includes(doctor.id)))
       : [];
     
+    // Add default notification preferences to doctors
+    const doctorsWithPrefs = doctors.map(doctor => ({
+      ...doctor,
+      notificationPreferences: {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      }
+    }));
+    
     // Create doctor lookup map
     const doctorMap = new Map();
-    doctors.forEach(doctor => doctorMap.set(doctor.id, doctor));
+    doctorsWithPrefs.forEach(doctor => doctorMap.set(doctor.id, doctor));
     
     // Add doctor info to each request
     return requests.map(request => ({
@@ -315,10 +326,45 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getAccessRequestsByDoctorId(doctorId: number): Promise<AccessRequest[]> {
-    return await db
+    const requests = await db
       .select()
       .from(accessRequests)
-      .where(eq(accessRequests.doctorId, doctorId));
+      .where(eq(accessRequests.doctorId, doctorId))
+      .orderBy(desc(accessRequests.requestDate));
+      
+    // Enrich with patient info
+    const patientIds = Array.from(new Set(requests.map(req => req.patientId)));
+    
+    const patients = patientIds.length > 0 
+      ? await db.select().from(users).where(
+          and(
+            eq(users.role, UserRole.PATIENT),
+            // Fetch all patients and filter them in memory
+            eq(users.role, UserRole.PATIENT)
+          )
+        ).then(allPatients => allPatients.filter(patient => patientIds.includes(patient.id)))
+      : [];
+    
+    // Add default notification preferences to patients
+    const patientsWithPrefs = patients.map(patient => ({
+      ...patient,
+      notificationPreferences: {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      }
+    }));
+    
+    // Create patient lookup map
+    const patientMap = new Map();
+    patientsWithPrefs.forEach(patient => patientMap.set(patient.id, patient));
+    
+    // Add patient info to each request
+    return requests.map(request => ({
+      ...request,
+      patient: patientMap.get(request.patientId)
+    }));
   }
   
   async getActiveAccessRequests(doctorId: number, patientId: number): Promise<AccessRequest[]> {
@@ -647,15 +693,55 @@ export class MemStorage implements IStorage {
   }
   
   async getAccessRequestsByPatientId(patientId: number): Promise<AccessRequest[]> {
-    return Array.from(this.accessRequestsMap.values()).filter(
-      (request) => request.patientId === patientId
-    );
+    const requests = Array.from(this.accessRequestsMap.values())
+      .filter(request => request.patientId === patientId)
+      .sort((a, b) => {
+        // Sort by requestDate descending
+        const aTime = a.requestDate ? new Date(a.requestDate).getTime() : 0;
+        const bTime = b.requestDate ? new Date(b.requestDate).getTime() : 0;
+        return bTime - aTime;
+      });
+    
+    // Enrich with doctor info
+    const doctorIds = [...new Set(requests.map(req => req.doctorId))];
+    const doctors = Array.from(this.usersMap.values())
+      .filter(user => user.role === UserRole.DOCTOR && doctorIds.includes(user.id));
+    
+    // Create doctor lookup map
+    const doctorMap = new Map();
+    doctors.forEach(doctor => doctorMap.set(doctor.id, doctor));
+    
+    // Add doctor info to each request
+    return requests.map(request => ({
+      ...request,
+      doctor: doctorMap.get(request.doctorId)
+    }));
   }
   
   async getAccessRequestsByDoctorId(doctorId: number): Promise<AccessRequest[]> {
-    return Array.from(this.accessRequestsMap.values()).filter(
-      (request) => request.doctorId === doctorId
-    );
+    const requests = Array.from(this.accessRequestsMap.values())
+      .filter(request => request.doctorId === doctorId)
+      .sort((a, b) => {
+        // Sort by requestDate descending
+        const aTime = a.requestDate ? new Date(a.requestDate).getTime() : 0;
+        const bTime = b.requestDate ? new Date(b.requestDate).getTime() : 0;
+        return bTime - aTime;
+      });
+    
+    // Enrich with patient info
+    const patientIds = [...new Set(requests.map(req => req.patientId))];
+    const patients = Array.from(this.usersMap.values())
+      .filter(user => user.role === UserRole.PATIENT && patientIds.includes(user.id));
+    
+    // Create patient lookup map
+    const patientMap = new Map();
+    patients.forEach(patient => patientMap.set(patient.id, patient));
+    
+    // Add patient info to each request
+    return requests.map(request => ({
+      ...request,
+      patient: patientMap.get(request.patientId)
+    }));
   }
   
   async getActiveAccessRequests(doctorId: number, patientId: number): Promise<AccessRequest[]> {
