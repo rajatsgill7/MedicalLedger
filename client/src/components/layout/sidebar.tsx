@@ -16,11 +16,23 @@ import {
   Shield 
 } from "lucide-react";
 import { useRole } from "@/hooks/use-role";
+import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 
 export function Sidebar() {
   const [location, setLocation] = useLocation();
   const { isPatient, isDoctor, isAdmin } = useRole();
+  const { user } = useAuth();
+  
+  // Fetch access requests if user is a patient
+  const { data: accessRequests } = useQuery<any[]>({
+    queryKey: [`/api/access-requests/patient/${user?.id}`],
+    enabled: !!user?.id && isPatient,
+  });
+  
+  // Count of pending requests
+  const pendingRequestsCount = accessRequests?.filter(req => req.status === "pending")?.length || 0;
   
   const isLinkActive = (path: string) => location === path;
 
@@ -54,7 +66,7 @@ export function Sidebar() {
               href="/patient/access-requests"
               active={isLinkActive("/patient/access-requests")}
               onClick={() => setLocation("/patient/access-requests")}
-              badge={2}
+              badge={pendingRequestsCount > 0 ? pendingRequestsCount : undefined}
             >
               Access Requests
             </NavItem>

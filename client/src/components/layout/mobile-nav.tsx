@@ -8,6 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { useRole } from "@/hooks/use-role";
+import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { 
   FolderSymlink, 
   Users, 
@@ -32,6 +34,16 @@ interface MobileNavProps {
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   const [location, setLocation] = useLocation();
   const { isPatient, isDoctor, isAdmin } = useRole();
+  const { user } = useAuth();
+  
+  // Fetch access requests if user is a patient
+  const { data: accessRequests } = useQuery<any[]>({
+    queryKey: [`/api/access-requests/patient/${user?.id}`],
+    enabled: !!user?.id && isPatient,
+  });
+  
+  // Count of pending requests
+  const pendingRequestsCount = accessRequests?.filter(req => req.status === "pending")?.length || 0;
 
   const navigate = (path: string) => {
     setLocation(path);
@@ -81,7 +93,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
                 icon={<LockKeyhole className="mr-3 h-[18px] w-[18px]" />}
                 active={isActive("/patient/access-requests")}
                 onClick={() => navigate("/patient/access-requests")}
-                badge={2}
+                badge={pendingRequestsCount > 0 ? pendingRequestsCount : undefined}
               />
               <NavItem
                 label="Security Settings"
