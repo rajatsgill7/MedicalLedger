@@ -56,6 +56,7 @@ export const insertRecordSchema = createInsertSchema(records).pick({
   recordDate: true,
   notes: true,
   fileUrl: true,
+  verified: true,
 });
 
 // Access requests table
