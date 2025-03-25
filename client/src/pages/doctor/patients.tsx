@@ -260,6 +260,7 @@ export default function DoctorPatients() {
               key={patient.id}
               patient={patient}
               onViewRecords={() => handleViewRecords(patient.id)}
+              onRequestAccess={() => setRequestModalOpen(true)}
             />
           ))
         ) : (
