@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useRoute, useLocation } from "wouter";
@@ -8,6 +8,7 @@ import { SearchFilters } from "@/components/medical/search-filters";
 import { UploadRecordModal } from "@/components/medical/upload-record-modal";
 import { useToast } from "@/hooks/use-toast";
 import { Record } from "@shared/schema";
+import { User } from "@shared/schema";
 import { 
   Upload,
   Folder,
@@ -96,33 +97,54 @@ export default function DoctorMedicalRecords() {
 
   // For patient name search, we need to fetch patient information for each record
   const [patientNames, setPatientNames] = useState<{[key: number]: string}>({});
-
-  // Fetch patient names for displayed records, when needed for search
-  useEffect(() => {
-    if (records && patientNameSearch) {
-      // Get unique patient IDs
-      const patientIds = [...new Set(records.map(record => record.patientId))];
+  
+  // Get unique patient IDs from records
+  const patientIds = useMemo(() => {
+    if (!records) return [];
+    return [...new Set(records.map(record => record.patientId))];
+  }, [records]);
+  
+  // Use TanStack Query to fetch patients data
+  const { data: patients } = useQuery<User[]>({
+    queryKey: ['patients', patientIds],
+    queryFn: async () => {
+      const patientData: User[] = [];
       
-      // Fetch patient names for each unique ID that we don't already have
-      patientIds.forEach(patientId => {
+      // Only fetch patients that we don't already have in the cache
+      for (const patientId of patientIds) {
         if (!patientNames[patientId]) {
-          fetch(`/api/users/${patientId}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.fullName) {
-                setPatientNames(prev => ({
-                  ...prev,
-                  [patientId]: data.fullName
-                }));
-              }
-            })
-            .catch(err => {
-              console.error("Error fetching patient details:", err);
-            });
+          try {
+            const res = await fetch(`/api/users/${patientId}`);
+            if (!res.ok) {
+              throw new Error(`Failed to fetch patient: ${res.status}`);
+            }
+            const data = await res.json();
+            if (data) {
+              patientData.push(data);
+            }
+          } catch (error) {
+            console.error(`Error fetching patient ${patientId}:`, error);
+          }
+        }
+      }
+      return patientData;
+    },
+    enabled: patientIds.length > 0 && !!patientNameSearch,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+  
+  // Update patient names cache when patients data changes
+  useEffect(() => {
+    if (patients && patients.length > 0) {
+      const newPatientNames = { ...patientNames };
+      patients.forEach(patient => {
+        if (patient.fullName) {
+          newPatientNames[patient.id] = patient.fullName;
         }
       });
+      setPatientNames(newPatientNames);
     }
-  }, [records, patientNameSearch]);
+  }, [patients]);
 
   // Filter records based on search and filters
   const filteredRecords = records?.filter(record => {
