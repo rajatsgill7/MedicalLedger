@@ -158,6 +158,7 @@ export function setupAuth(app: Express) {
     
     // Don't send password to client
     const { password, ...user } = req.user;
+    console.log('Current user in session:', user);
     res.json(user);
   });
 }

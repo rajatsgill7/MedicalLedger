@@ -542,6 +542,7 @@ Verified: ${record.verified ? "Yes" : "No"}
 
       // Don't send password to client
       const { password, ...sanitizedUser } = updatedUser;
+      console.log('Sending to client:', sanitizedUser);
       res.json(sanitizedUser);
     } catch (error) {
       if (error.name === "ZodError") {
