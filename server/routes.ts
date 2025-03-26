@@ -49,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
   
   // Users routes
-  app.get('/api/users', isAuthenticated, hasRole([UserRole.ADMIN]), async (req, res) => {
+  app.get('/api/users', isAuthenticated, hasRole(["admin"]), async (req, res) => {
     const users = await storage.getAllUsers();
     // Don't send passwords to client
     const sanitizedUsers = users.map(({ password, ...user }) => user);
@@ -99,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(sanitizedDoctors);
   });
   
-  app.get('/api/patients', isAuthenticated, hasRole([UserRole.DOCTOR, UserRole.ADMIN]), async (req, res) => {
+  app.get('/api/patients', isAuthenticated, hasRole(["doctor", "admin"]), async (req, res) => {
     // Get all users with role "patient"
     const users = await storage.getAllUsers();
     const patients = users.filter(user => (user.role as string) === 'patient');
@@ -126,15 +126,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Check if user has access to this record
     if (
-      req.user.role === UserRole.PATIENT && record.patientId !== req.user.id ||
-      req.user.role === UserRole.DOCTOR && record.patientId !== req.user.id && 
+      (req.user.role as string) === "patient" && record.patientId !== req.user.id ||
+      (req.user.role as string) === "doctor" && record.patientId !== req.user.id && 
       !(await storage.hasAccess(req.user.id, record.patientId))
     ) {
       return res.status(403).json({ message: "Access denied to this record" });
     }
     
     // Log the record access
-    if (req.user.role === UserRole.DOCTOR && record.patientId !== req.user.id) {
+    if ((req.user.role as string) === "doctor" && record.patientId !== req.user.id) {
       await storage.createAuditLog({
         userId: req.user.id,
         action: "record_accessed",
@@ -163,8 +163,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Check if user has access to this record
     if (
-      req.user.role === UserRole.PATIENT && record.patientId !== req.user.id ||
-      req.user.role === UserRole.DOCTOR && record.patientId !== req.user.id && 
+      (req.user.role as string) === "patient" && record.patientId !== req.user.id ||
+      (req.user.role as string) === "doctor" && record.patientId !== req.user.id && 
       !(await storage.hasAccess(req.user.id, record.patientId))
     ) {
       return res.status(403).json({ message: "Access denied to this record" });
@@ -210,8 +210,8 @@ Verified: ${record.verified ? "Yes" : "No"}
     
     // Check if user has access to patient records
     if (
-      user.role === UserRole.PATIENT && patientId !== user.id ||
-      user.role === UserRole.DOCTOR && patientId !== user.id && 
+      (user.role as string) === "patient" && patientId !== user.id ||
+      (user.role as string) === "doctor" && patientId !== user.id && 
       !(await storage.hasAccess(user.id, patientId))
     ) {
       return res.status(403).json({ message: "Access denied to patient records" });
@@ -220,7 +220,7 @@ Verified: ${record.verified ? "Yes" : "No"}
     const records = await storage.getRecordsByPatientId(patientId);
     
     // Log the records access if it's a doctor accessing patient records
-    if (user.role === UserRole.DOCTOR && patientId !== user.id) {
+    if ((user.role as string) === "doctor" && patientId !== user.id) {
       await storage.createAuditLog({
         userId: user.id,
         action: "records_accessed",
@@ -233,7 +233,7 @@ Verified: ${record.verified ? "Yes" : "No"}
   });
   
   // Get all records for a doctor (across all patients they have access to)
-  app.get('/api/records/doctor/:doctorId', isAuthenticated, hasRole([UserRole.DOCTOR]), async (req, res) => {
+  app.get('/api/records/doctor/:doctorId', isAuthenticated, hasRole(["doctor"]), async (req, res) => {
     const doctorId = parseInt(req.params.doctorId);
     if (isNaN(doctorId)) {
       return res.status(400).json({ message: "Invalid doctor ID" });
@@ -256,7 +256,7 @@ Verified: ${record.verified ? "Yes" : "No"}
     const allRecords = [];
     
     // Add the doctor's own records if they are also a patient
-    if (user.role === UserRole.DOCTOR) {
+    if ((user.role as string) === "doctor") {
       const ownRecords = await storage.getRecordsByPatientId(doctorId);
       allRecords.push(...ownRecords);
     }
@@ -295,8 +295,8 @@ Verified: ${record.verified ? "Yes" : "No"}
       
       // Verify access rights
       if (
-        user.role === UserRole.PATIENT && recordData.patientId !== user.id ||
-        user.role === UserRole.DOCTOR && 
+        (user.role as string) === "patient" && recordData.patientId !== user.id ||
+        (user.role as string) === "doctor" && 
         recordData.patientId !== user.id && 
         !(await storage.hasAccess(user.id, recordData.patientId))
       ) {
@@ -304,7 +304,7 @@ Verified: ${record.verified ? "Yes" : "No"}
       }
       
       // Auto-verify if doctor is uploading
-      const verified = user.role === UserRole.DOCTOR;
+      const verified = (user.role as string) === "doctor";
       
       const record = await storage.createRecord({
         ...recordData,
@@ -343,7 +343,7 @@ Verified: ${record.verified ? "Yes" : "No"}
     const user = req.user;
     
     // Patients can only view their own access requests
-    if (user.role === UserRole.PATIENT && patientId !== user.id) {
+    if ((user.role as string) === "patient" && patientId !== user.id) {
       return res.status(403).json({ message: "Access denied" });
     }
     
@@ -377,7 +377,7 @@ Verified: ${record.verified ? "Yes" : "No"}
     const user = req.user;
     
     // Doctors can only view their own access requests
-    if (user.role === UserRole.DOCTOR && doctorId !== user.id) {
+    if ((user.role as string) === "doctor" && doctorId !== user.id) {
       return res.status(403).json({ message: "Access denied" });
     }
     
@@ -404,7 +404,7 @@ Verified: ${record.verified ? "Yes" : "No"}
     res.json(requestsWithPatient);
   });
   
-  app.post('/api/access-requests', isAuthenticated, hasRole([UserRole.DOCTOR]), async (req, res) => {
+  app.post('/api/access-requests', isAuthenticated, hasRole(["doctor"]), async (req, res) => {
     try {
       const requestData = insertAccessRequestSchema.parse(req.body);
       
@@ -504,7 +504,7 @@ Verified: ${record.verified ? "Yes" : "No"}
   });
   
   // Audit logs routes
-  app.get('/api/audit-logs', isAuthenticated, hasRole([UserRole.ADMIN]), async (req, res) => {
+  app.get('/api/audit-logs', isAuthenticated, hasRole(["admin"]), async (req, res) => {
     const logs = await storage.getAuditLogs();
     
     // Fetch user information for each log
