@@ -76,7 +76,19 @@ const editUserSchema = z.object({
   role: z.string(),
 });
 
+// Define add user form schema
+const addUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  fullName: z.string().min(3, "Full name must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  specialty: z.string().optional(),
+  phone: z.string().optional(),
+  role: z.string(),
+});
+
 type EditUserFormValues = z.infer<typeof editUserSchema>;
+type AddUserFormValues = z.infer<typeof addUserSchema>;
 
 export default function AdminUserManagement() {
   const { toast } = useToast();
@@ -84,6 +96,7 @@ export default function AdminUserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const itemsPerPage = 10;
 
   // Fetch all users
@@ -100,6 +113,20 @@ export default function AdminUserManagement() {
       specialty: "",
       phone: "",
       role: "",
+    },
+  });
+  
+  // Setup form for adding user
+  const addForm = useForm<AddUserFormValues>({
+    resolver: zodResolver(addUserSchema),
+    defaultValues: {
+      username: "",
+      fullName: "",
+      email: "",
+      password: "",
+      specialty: "",
+      phone: "",
+      role: UserRole.PATIENT,
     },
   });
 
@@ -144,6 +171,34 @@ export default function AdminUserManagement() {
       });
     },
   });
+  
+  // Mutation for creating a new user
+  const createUserMutation = useMutation({
+    mutationFn: async (data: AddUserFormValues) => {
+      const res = await apiRequest("POST", "/api/register", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User created",
+        description: "New user has been successfully created"
+      });
+      
+      // Close modal and reset form
+      setIsAddDialogOpen(false);
+      addForm.reset();
+      
+      // Refetch user data to update UI
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Creation failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Filter users based on search term
   const filteredUsers = users?.filter(user => 
@@ -181,11 +236,12 @@ export default function AdminUserManagement() {
 
   // Handler for adding a new user
   const handleAddUser = () => {
-    // In a real app, this would open a create user modal
-    toast({
-      title: "Add user",
-      description: "Creating a new user"
-    });
+    setIsAddDialogOpen(true);
+  };
+  
+  // Handler for saving new user
+  const handleSaveNewUser = (values: AddUserFormValues) => {
+    createUserMutation.mutate(values);
   };
 
   // Handler for exporting data

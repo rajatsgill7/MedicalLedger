@@ -665,31 +665,7 @@ export default function SettingsPage() {
                       
 
                       
-                      {/* Emergency Access Override (only for admins and doctors) */}
-                      {(isAdmin || isDoctor) && (
-                        <div className="mt-6 p-4 border border-red-200 dark:border-red-900 rounded-md">
-                          <div className="flex items-start space-x-4">
-                            <div className="mt-0.5">
-                              <ShieldAlert className="h-5 w-5 text-red-500" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="text-sm font-medium mb-1">Emergency Access Protocol</h4>
-                              <p className="text-xs text-muted-foreground mb-3">
-                                In emergency situations, authorized personnel can temporarily override access controls to ensure timely medical care.
-                                All emergency overrides are logged and require full justification.
-                              </p>
-                              <Button 
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => setEmergencyDialogOpen(true)}
-                                className="mt-1"
-                              >
-                                Emergency Override
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+
                       
                       <FormField
                         control={advancedSecurityForm.control}
@@ -939,16 +915,18 @@ export default function SettingsPage() {
               <KeyRound className="h-5 w-5 text-blue-500 mr-2" />
               Recovery Codes Generated
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              <p className="mb-4">These are your one-time use recovery codes. Store them in a secure place. Each code can only be used once to recover your account.</p>
-              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded font-mono text-sm">
-                {generatedCodes.map((code, index) => (
-                  <div key={index} className="mb-1">{code}</div>
-                ))}
+            <AlertDialogDescription asChild>
+              <div>
+                <div className="mb-4">These are your one-time use recovery codes. Store them in a secure place. Each code can only be used once to recover your account.</div>
+                <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded font-mono text-sm">
+                  {generatedCodes.map((code, index) => (
+                    <div key={index} className="mb-1">{code}</div>
+                  ))}
+                </div>
+                <div className="mt-4 text-amber-600 dark:text-amber-400 font-semibold text-sm">
+                  Warning: These codes won't be shown again!
+                </div>
               </div>
-              <p className="mt-4 text-amber-600 dark:text-amber-400 font-semibold text-sm">
-                Warning: These codes won't be shown again!
-              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
