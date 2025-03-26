@@ -119,21 +119,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Record not found" });
     }
     
-    const user = req.user;
+    // Ensure user is authenticated using type guard
+    ensureAuthenticated(req);
     
     // Check if user has access to this record
     if (
-      user.role === UserRole.PATIENT && record.patientId !== user.id ||
-      user.role === UserRole.DOCTOR && record.patientId !== user.id && 
-      !(await storage.hasAccess(user.id, record.patientId))
+      req.user.role === UserRole.PATIENT && record.patientId !== req.user.id ||
+      req.user.role === UserRole.DOCTOR && record.patientId !== req.user.id && 
+      !(await storage.hasAccess(req.user.id, record.patientId))
     ) {
       return res.status(403).json({ message: "Access denied to this record" });
     }
     
     // Log the record access
-    if (user.role === UserRole.DOCTOR && record.patientId !== user.id) {
+    if (req.user.role === UserRole.DOCTOR && record.patientId !== req.user.id) {
       await storage.createAuditLog({
-        userId: user.id,
+        userId: req.user.id,
         action: "record_accessed",
         details: `Doctor accessed record ${recordId} of patient ${record.patientId}`,
         ipAddress: req.ip
@@ -155,20 +156,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Record not found" });
     }
     
-    const user = req.user;
+    // Ensure user is authenticated using type guard
+    ensureAuthenticated(req);
     
     // Check if user has access to this record
     if (
-      user.role === UserRole.PATIENT && record.patientId !== user.id ||
-      user.role === UserRole.DOCTOR && record.patientId !== user.id && 
-      !(await storage.hasAccess(user.id, record.patientId))
+      req.user.role === UserRole.PATIENT && record.patientId !== req.user.id ||
+      req.user.role === UserRole.DOCTOR && record.patientId !== req.user.id && 
+      !(await storage.hasAccess(req.user.id, record.patientId))
     ) {
       return res.status(403).json({ message: "Access denied to this record" });
     }
     
     // Log the record download
     await storage.createAuditLog({
-      userId: user.id,
+      userId: req.user.id,
       action: "record_downloaded",
       details: `User downloaded record ${recordId}`,
       ipAddress: req.ip
@@ -317,8 +319,11 @@ Verified: ${record.verified ? "Yes" : "No"}
       
       res.status(201).json(record);
     } catch (error) {
-      if (error.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid record data", errors: error.errors });
+      if (error instanceof Error && error.name === "ZodError") {
+        return res.status(400).json({ 
+          message: "Invalid record data", 
+          errors: (error as unknown as { errors: any }).errors 
+        });
       }
       throw error;
     }
@@ -434,8 +439,11 @@ Verified: ${record.verified ? "Yes" : "No"}
       
       res.status(201).json(accessRequest);
     } catch (error) {
-      if (error.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid access request data", errors: error.errors });
+      if (error instanceof Error && error.name === "ZodError") {
+        return res.status(400).json({ 
+          message: "Invalid access request data", 
+          errors: (error as unknown as { errors: any }).errors 
+        });
       }
       throw error;
     }
@@ -460,9 +468,12 @@ Verified: ${record.verified ? "Yes" : "No"}
     // doctor can only update requests they made, admin can update any
     if (
       (user.role === UserRole.PATIENT && accessRequest.patientId !== user.id) ||
-      (user.role === UserRole.DOCTOR && accessRequest.doctorId !== user.id && user.role !== UserRole.ADMIN)
+      (user.role === UserRole.DOCTOR && accessRequest.doctorId !== user.id)
     ) {
-      return res.status(403).json({ message: "Access denied" });
+      // Admin role is excluded from this check (admins can update any)
+      if (user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "Access denied" });
+      }
     }
     
     // Update access request
@@ -691,7 +702,7 @@ Verified: ${record.verified ? "Yes" : "No"}
       // Update user with validated notification preferences
       // Use the imported helper function to properly serialize the preferences
       const updatedUser = await storage.updateUser(userId, { 
-        notificationPreferences: validatedData
+        notificationPreferences: notificationPrefsToString(validatedData)
       });
       
       if (!updatedUser) {
@@ -706,11 +717,13 @@ Verified: ${record.verified ? "Yes" : "No"}
         ipAddress: req.ip
       });
 
-      console.log('Updated notification preferences:', updatedUser.notificationPreferences);
+      // Parse the saved preferences before returning to client
+      const preferences = parseNotificationPrefs(updatedUser.notificationPreferences);
+      console.log('Updated notification preferences:', preferences);
 
       res.json({
         message: "Notification preferences updated",
-        preferences: updatedUser.notificationPreferences
+        preferences
       });
     } catch (error) {
       if (error instanceof Error && error.name === "ZodError") {
