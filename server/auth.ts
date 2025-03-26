@@ -109,7 +109,8 @@ export function setupAuth(app: Express) {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
-          specialty: user.specialty
+          specialty: user.specialty,
+          settings: user.settings
         });
       });
     } catch (error) {
@@ -138,7 +139,8 @@ export function setupAuth(app: Express) {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
-          specialty: user.specialty
+          specialty: user.specialty,
+          settings: user.settings
         });
       });
     })(req, res, next);

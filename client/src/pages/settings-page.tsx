@@ -62,6 +62,16 @@ const securityFormSchema = z.object({
   path: ["confirmPassword"],
 });
 
+const advancedSecurityFormSchema = z.object({
+  twoFactorEnabled: z.boolean().default(false),
+  twoFactorMethod: z.enum(['sms', 'email', 'app']).nullable().optional(),
+  requiredReauthForSensitive: z.boolean().default(true),
+  sessionTimeout: z.number().min(5).max(1440).nullable().optional(), // 5 minutes to 24 hours
+  receiveLoginAlerts: z.boolean().default(true),
+  reviewAccessLogs: z.boolean().default(true),
+  recoveryCodesGenerated: z.boolean().default(false)
+});
+
 const notificationFormSchema = z.object({
   emailNotifications: z.boolean(),
   smsNotifications: z.boolean(),
@@ -95,15 +105,29 @@ export default function SettingsPage() {
       confirmPassword: "",
     },
   });
+  
+  // Advanced security form
+  const advancedSecurityForm = useForm<z.infer<typeof advancedSecurityFormSchema>>({
+    resolver: zodResolver(advancedSecurityFormSchema),
+    defaultValues: {
+      twoFactorEnabled: user?.settings?.security?.twoFactorEnabled ?? false,
+      twoFactorMethod: user?.settings?.security?.twoFactorMethod ?? null,
+      requiredReauthForSensitive: user?.settings?.security?.requiredReauthForSensitive ?? true,
+      sessionTimeout: user?.settings?.security?.sessionTimeout ?? null,
+      receiveLoginAlerts: true,
+      reviewAccessLogs: true,
+      recoveryCodesGenerated: user?.settings?.security?.recoveryCodesGenerated ?? false
+    },
+  });
 
   // Notifications form
   const notificationForm = useForm<z.infer<typeof notificationFormSchema>>({
     resolver: zodResolver(notificationFormSchema),
     defaultValues: {
-      emailNotifications: user?.notificationPreferences?.emailNotifications ?? true,
-      smsNotifications: user?.notificationPreferences?.smsNotifications ?? false,
-      accessRequestAlerts: user?.notificationPreferences?.accessRequestAlerts ?? true,
-      securityAlerts: user?.notificationPreferences?.securityAlerts ?? true,
+      emailNotifications: user?.settings?.notifications?.emailNotifications ?? true,
+      smsNotifications: user?.settings?.notifications?.smsNotifications ?? false,
+      accessRequestAlerts: user?.settings?.notifications?.accessRequestAlerts ?? true,
+      securityAlerts: user?.settings?.notifications?.securityAlerts ?? true,
     },
   });
 
@@ -190,11 +214,14 @@ export default function SettingsPage() {
         description: "Your notification preferences have been updated.",
       });
       // Update user data with new preferences
-      const currentUser = queryClient.getQueryData<User>(['/api/user']);
-      if (currentUser && response.preferences) {
+      const currentUser = queryClient.getQueryData<any>(['/api/user']);
+      if (currentUser && response.notifications) {
         queryClient.setQueryData(['/api/user'], {
           ...currentUser,
-          notificationPreferences: response.preferences
+          settings: {
+            ...currentUser.settings,
+            notifications: response.notifications
+          }
         });
       }
       // Also invalidate to ensure future fetches are fresh
@@ -208,6 +235,42 @@ export default function SettingsPage() {
       });
     },
   });
+  
+  // Advanced security settings mutation
+  const updateAdvancedSecurityMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof advancedSecurityFormSchema>) => {
+      const res = await apiRequest("PATCH", `/api/users/${user?.id}/security`, data);
+      return await res.json();
+    },
+    onSuccess: (response) => {
+      toast({
+        title: "Security settings updated",
+        description: "Your advanced security settings have been updated.",
+      });
+      
+      // Update user data with new security settings
+      const currentUser = queryClient.getQueryData<any>(['/api/user']);
+      if (currentUser) {
+        queryClient.setQueryData(['/api/user'], {
+          ...currentUser,
+          settings: {
+            ...currentUser.settings,
+            security: response.security
+          }
+        });
+      }
+      
+      // Also invalidate to ensure future fetches are fresh
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update security settings.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Form submission handlers
   const onProfileSubmit = (data: z.infer<typeof profileFormSchema>) => {
@@ -216,6 +279,10 @@ export default function SettingsPage() {
 
   const onSecuritySubmit = (data: z.infer<typeof securityFormSchema>) => {
     changePasswordMutation.mutate(data);
+  };
+  
+  const onAdvancedSecuritySubmit = (data: z.infer<typeof advancedSecurityFormSchema>) => {
+    updateAdvancedSecurityMutation.mutate(data);
   };
 
   const onNotificationsSubmit = (data: z.infer<typeof notificationFormSchema>) => {
@@ -404,66 +471,247 @@ export default function SettingsPage() {
                   </Form>
                 </div>
 
-                {isPatient && (
-                  <div className="pt-4">
-                    <h3 className="text-lg font-medium">Advanced Security</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Configure additional security settings for your medical records.
-                    </p>
-                    
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <div className="flex items-center">
-                            <Key className="h-4 w-4 mr-2" />
-                            <span className="text-sm font-medium">Two-Factor Authentication</span>
+                <div className="pt-4">
+                  <h3 className="text-lg font-medium">Advanced Security</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Configure additional security settings for your medical records.
+                  </p>
+                  
+                  <Form {...advancedSecurityForm}>
+                    <form 
+                      id="advanced-security-form"
+                      onSubmit={advancedSecurityForm.handleSubmit(onAdvancedSecuritySubmit)}
+                      className="space-y-4"
+                    >
+                      <FormField
+                        control={advancedSecurityForm.control}
+                        name="twoFactorEnabled"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center">
+                                <Key className="h-4 w-4 mr-2" />
+                                <span className="text-sm font-medium">Two-Factor Authentication</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Require a verification code when signing in
+                              </p>
+                            </div>
+                            <FormControl>
+                              <Switch 
+                                checked={field.value} 
+                                onCheckedChange={field.onChange} 
+                              />
+                            </FormControl>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            Require a verification code when signing in
-                          </p>
+                        )}
+                      />
+                      
+                      {advancedSecurityForm.watch("twoFactorEnabled") && (
+                        <div className="ml-6 border-l-2 pl-4 border-muted">
+                          <p className="text-sm mb-2">Choose verification method:</p>
+                          <div className="flex space-x-3">
+                            <Button 
+                              variant={advancedSecurityForm.watch("twoFactorMethod") === "sms" ? "default" : "outline"} 
+                              size="sm"
+                              type="button"
+                              onClick={() => advancedSecurityForm.setValue("twoFactorMethod", "sms")}
+                              className="flex items-center gap-1"
+                            >
+                              <Smartphone className="h-3 w-3" />
+                              <span>SMS</span>
+                            </Button>
+                            <Button 
+                              variant={advancedSecurityForm.watch("twoFactorMethod") === "email" ? "default" : "outline"} 
+                              size="sm"
+                              type="button"
+                              onClick={() => advancedSecurityForm.setValue("twoFactorMethod", "email")}
+                              className="flex items-center gap-1"
+                            >
+                              <Mail className="h-3 w-3" />
+                              <span>Email</span>
+                            </Button>
+                            <Button 
+                              variant={advancedSecurityForm.watch("twoFactorMethod") === "app" ? "default" : "outline"} 
+                              size="sm"
+                              type="button"
+                              onClick={() => advancedSecurityForm.setValue("twoFactorMethod", "app")}
+                              className="flex items-center gap-1"
+                            >
+                              <Key className="h-3 w-3" />
+                              <span>App</span>
+                            </Button>
+                          </div>
                         </div>
-                        <Button variant="outline" size="sm">
-                          Enable
-                        </Button>
-                      </div>
+                      )}
 
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <div className="flex items-center">
-                            <AlertCircle className="h-4 w-4 mr-2" />
-                            <span className="text-sm font-medium">Login Alerts</span>
+                      <FormField
+                        control={advancedSecurityForm.control}
+                        name="requiredReauthForSensitive"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center">
+                                <Shield className="h-4 w-4 mr-2" />
+                                <span className="text-sm font-medium">Require Authentication for Sensitive Operations</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Re-authenticate when accessing sensitive data or operations
+                              </p>
+                            </div>
+                            <FormControl>
+                              <Switch 
+                                checked={field.value} 
+                                onCheckedChange={field.onChange} 
+                              />
+                            </FormControl>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            Receive notifications about suspicious login attempts
-                          </p>
-                        </div>
-                        <Switch defaultChecked />
-                      </div>
+                        )}
+                      />
 
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <div className="flex items-center">
-                            <Shield className="h-4 w-4 mr-2" />
-                            <span className="text-sm font-medium">Access Log Review</span>
+                      <FormField
+                        control={advancedSecurityForm.control}
+                        name="receiveLoginAlerts"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center">
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                <span className="text-sm font-medium">Login Alerts</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Receive notifications about suspicious login attempts
+                              </p>
+                            </div>
+                            <FormControl>
+                              <Switch 
+                                checked={field.value} 
+                                onCheckedChange={field.onChange} 
+                              />
+                            </FormControl>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            Periodically review who accessed your medical records
-                          </p>
-                        </div>
-                        <Switch defaultChecked />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                        )}
+                      />
+
+                      <FormField
+                        control={advancedSecurityForm.control}
+                        name="reviewAccessLogs"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center">
+                                <Shield className="h-4 w-4 mr-2" />
+                                <span className="text-sm font-medium">Access Log Review</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Periodically review who accessed your medical records
+                              </p>
+                            </div>
+                            <FormControl>
+                              <Switch 
+                                checked={field.value} 
+                                onCheckedChange={field.onChange} 
+                              />
+                            </FormControl>
+                          </div>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={advancedSecurityForm.control}
+                        name="recoveryCodesGenerated"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center">
+                                <Key className="h-4 w-4 mr-2" />
+                                <span className="text-sm font-medium">Recovery Codes</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {field.value ? 
+                                  "Recovery codes have been generated for account recovery" :
+                                  "Generate recovery codes to regain access if you lose your 2FA device"
+                                }
+                              </p>
+                            </div>
+                            
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              type="button"
+                              onClick={() => {
+                                // In a real app, this would generate and show recovery codes
+                                advancedSecurityForm.setValue("recoveryCodesGenerated", true);
+                                toast({
+                                  title: "Recovery Codes Generated",
+                                  description: "Your recovery codes have been generated. Store them in a safe place.",
+                                });
+                              }}
+                              disabled={field.value}
+                            >
+                              {field.value ? "Generated" : "Generate Codes"}
+                            </Button>
+                          </div>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={advancedSecurityForm.control}
+                        name="sessionTimeout"
+                        render={({ field }) => (
+                          <div className="space-y-2 pt-2">
+                            <div className="flex items-center">
+                              <AlertCircle className="h-4 w-4 mr-2" />
+                              <span className="text-sm font-medium">Session Timeout</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Set how long your account stays logged in without activity
+                            </p>
+                            <div className="flex items-center gap-2 pt-1">
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  min={5} 
+                                  max={1440} 
+                                  placeholder="Session length (minutes)" 
+                                  {...field}
+                                  value={field.value || ""} 
+                                  onChange={(e) => {
+                                    const value = e.target.value ? parseInt(e.target.value) : null;
+                                    field.onChange(value);
+                                  }} 
+                                />
+                              </FormControl>
+                              <span className="text-sm text-muted-foreground">minutes</span>
+                            </div>
+                            <FormMessage />
+                          </div>
+                        )}
+                      />
+                    </form>
+                  </Form>
+                </div>
               </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button 
-                  type="submit" 
-                  form="security-form"
-                  disabled={changePasswordMutation.isPending}
-                >
-                  {changePasswordMutation.isPending ? "Updating..." : "Update Password"}
-                </Button>
+              <CardFooter className="flex justify-between">
+                <div>
+                  <Button 
+                    type="submit" 
+                    form="advanced-security-form"
+                    disabled={updateAdvancedSecurityMutation.isPending}
+                    variant="outline"
+                  >
+                    {updateAdvancedSecurityMutation.isPending ? "Saving..." : "Save Security Settings"}
+                  </Button>
+                </div>
+                <div>
+                  <Button 
+                    type="submit" 
+                    form="security-form"
+                    disabled={changePasswordMutation.isPending}
+                  >
+                    {changePasswordMutation.isPending ? "Updating..." : "Update Password"}
+                  </Button>
+                </div>
               </CardFooter>
             </Card>
           </TabsContent>

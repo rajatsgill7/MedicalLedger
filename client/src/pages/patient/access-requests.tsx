@@ -33,8 +33,13 @@ export default function PatientAccessRequests() {
   });
 
   // Sort requests by status and date
-  const pendingRequests = requests?.filter(req => req.status === "pending")
+  // Ensure proper filtering of pending requests
+  const pendingRequests = requests?.filter(req => req.status.toLowerCase() === "pending")
     .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime()) || [];
+    
+  // Debug to console
+  console.log("Access requests:", requests);
+  console.log("Pending requests:", pendingRequests);
   
   const approvedRequests = requests?.filter(req => req.status === "approved")
     .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime()) || [];
