@@ -557,7 +557,7 @@ export default function AdminUserManagement() {
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <Button 
             onClick={handleAddUser}
-            className="bg-secondary hover:bg-secondary-dark"
+            className="bg-primary hover:bg-primary/90"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Add User
