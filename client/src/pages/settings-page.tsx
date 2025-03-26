@@ -96,7 +96,6 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { isPatient, isDoctor, isAdmin } = useRole();
   const [activeTab, setActiveTab] = useState("profile");
-  const [emergencyDialogOpen, setEmergencyDialogOpen] = useState(false);
   const [recoveryCodesDialogOpen, setRecoveryCodesDialogOpen] = useState(false);
   const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
   
@@ -614,37 +613,40 @@ export default function SettingsPage() {
 
 
 
-                      <div className="flex flex-col space-y-1">
-                        <div className="flex items-center">
-                          <KeyRound className="h-4 w-4 mr-2" />
-                          <span className="text-sm font-medium">Recovery Codes</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Generate backup codes to access your account if you lose your two-factor device
-                        </p>
-                        <div className="flex">
+                      <div className="rounded-md border p-4 shadow-sm bg-card">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <div className="flex items-center">
+                              <KeyRound className="h-5 w-5 mr-2 text-primary" />
+                              <span className="text-sm font-medium">Recovery Codes</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Generate backup codes to access your account if you lose your two-factor device
+                            </p>
+                          </div>
                           <Button
                             type="button"
                             variant="outline"
                             onClick={() => generateRecoveryCodesMutation.mutate()}
-                            className="flex items-center gap-1"
+                            className="flex items-center gap-1 h-9"
                             disabled={generateRecoveryCodesMutation.isPending}
                           >
-                            <KeyRound className="h-3 w-3" />
+                            <KeyRound className="h-3.5 w-3.5 mr-1" />
                             <span>
                               {generateRecoveryCodesMutation.isPending 
                                 ? "Generating..." 
                                 : user?.settings?.security?.recoveryCodesGenerated 
-                                  ? "Generate New Recovery Codes" 
-                                  : "Generate Recovery Codes"
+                                  ? "Generate New Codes" 
+                                  : "Generate Codes"
                               }
                             </span>
                           </Button>
                         </div>
                         {user?.settings?.security?.recoveryCodesGenerated && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Recovery codes have been generated. Generate new ones to replace existing codes.
-                          </p>
+                          <div className="flex items-center text-xs rounded-md bg-muted p-2 text-muted-foreground">
+                            <Info className="h-3.5 w-3.5 mr-1.5" />
+                            <span>Recovery codes are stored securely. Generate new ones to replace existing codes.</span>
+                          </div>
                         )}
                       </div>
 
@@ -892,53 +894,6 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Emergency Override Dialog */}
-      <AlertDialog open={emergencyDialogOpen} onOpenChange={setEmergencyDialogOpen}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center">
-              <ShieldAlert className="h-5 w-5 text-red-500 mr-2" />
-              Emergency Access Override
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action will temporarily override normal access controls and is logged for security review. 
-              <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded text-sm">
-                <strong>Warning:</strong> Please confirm you're overriding access for an emergency situation.
-                Your ID and timestamp will be recorded in the audit logs.
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => {
-                // Create audit log and override access record
-                apiRequest("POST", "/api/emergency-override", { 
-                  userId: user?.id,
-                  reason: "Emergency medical situation",
-                  timestamp: new Date().toISOString()
-                }).then(() => {
-                  toast({
-                    title: "Emergency Override Activated",
-                    description: "Access has been temporarily granted. This action has been logged.",
-                    variant: "destructive"
-                  });
-                }).catch(error => {
-                  toast({
-                    title: "Error",
-                    description: error.message || "Failed to activate emergency override",
-                    variant: "destructive"
-                  });
-                });
-              }}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Confirm Emergency Override
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Recovery Codes Dialog */}
       <AlertDialog open={recoveryCodesDialogOpen} onOpenChange={setRecoveryCodesDialogOpen}>
