@@ -517,22 +517,23 @@ Verified: ${record.verified ? "Yes" : "No"}
       return res.status(400).json({ message: "Invalid user ID" });
     }
     
-    const user = req.user;
-    
-    // Users can only update their own profile, admins can update any
-    if (user.role !== UserRole.ADMIN && userId !== user.id) {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
-    // Validate profile data using zod
-    const profileSchema = z.object({
-      fullName: z.string().min(3).optional(),
-      email: z.string().email().optional(),
-      specialty: z.string().optional(),
-      phone: z.string().optional(),
-    });
-
     try {
+      ensureAuthenticated(req);
+      const user = req.user;
+      
+      // Users can only update their own profile, admins can update any
+      if (user.role !== UserRole.ADMIN && userId !== user.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+  
+      // Validate profile data using zod
+      const profileSchema = z.object({
+        fullName: z.string().min(3).optional(),
+        email: z.string().email().optional(),
+        specialty: z.string().optional(),
+        phone: z.string().optional(),
+      });
+  
       const validatedData = profileSchema.parse(req.body);
       
       // Debug log to see what's coming in
@@ -561,8 +562,11 @@ Verified: ${record.verified ? "Yes" : "No"}
       console.log('Sending to client:', sanitizedUser);
       res.json(sanitizedUser);
     } catch (error) {
-      if (error.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid profile data", errors: error.errors });
+      if (error instanceof Error && error.name === "ZodError") {
+        return res.status(400).json({ 
+          message: "Invalid profile data", 
+          errors: (error as unknown as { errors: any }).errors 
+        });
       }
       throw error;
     }
@@ -574,55 +578,63 @@ Verified: ${record.verified ? "Yes" : "No"}
       return res.status(400).json({ message: "Invalid user ID" });
     }
     
-    const user = req.user;
-    
-    // Users can only change their own password, admins can force change
-    if (user.role !== UserRole.ADMIN && userId !== user.id) {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
-    const { currentPassword, newPassword } = req.body;
-
-    if (!newPassword || newPassword.length < 8) {
-      return res.status(400).json({ message: "New password must be at least 8 characters" });
-    }
-
-    // For regular users, verify current password
-    if (userId === user.id && user.role !== UserRole.ADMIN) {
-      if (!currentPassword) {
-        return res.status(400).json({ message: "Current password is required" });
+    try {
+      ensureAuthenticated(req);
+      const user = req.user;
+      
+      // Users can only change their own password, admins can force change
+      if (user.role !== UserRole.ADMIN && userId !== user.id) {
+        return res.status(403).json({ message: "Access denied" });
       }
-
-      const userToUpdate = await storage.getUser(userId);
-      if (!userToUpdate) {
+  
+      const { currentPassword, newPassword } = req.body;
+  
+      if (!newPassword || newPassword.length < 8) {
+        return res.status(400).json({ message: "New password must be at least 8 characters" });
+      }
+  
+      // For regular users, verify current password
+      if (userId === user.id && user.role !== UserRole.ADMIN) {
+        if (!currentPassword) {
+          return res.status(400).json({ message: "Current password is required" });
+        }
+  
+        const userToUpdate = await storage.getUser(userId);
+        if (!userToUpdate) {
+          return res.status(404).json({ message: "User not found" });
+        }
+  
+        const passwordValid = await comparePasswords(currentPassword, userToUpdate.password);
+        if (!passwordValid) {
+          return res.status(401).json({ message: "Current password is incorrect" });
+        }
+      }
+  
+      // Update password
+      const hashedPassword = await hashPassword(newPassword);
+      const updatedUser = await storage.updateUser(userId, { password: hashedPassword });
+      
+      if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
-
-      const passwordValid = await comparePasswords(currentPassword, userToUpdate.password);
-      if (!passwordValid) {
-        return res.status(401).json({ message: "Current password is incorrect" });
+  
+      // Log the update
+      await storage.createAuditLog({
+        userId: user.id,
+        action: "password_changed",
+        details: userId === user.id 
+          ? `User changed their password` 
+          : `Admin changed password for user ${userId}`,
+        ipAddress: req.ip
+      });
+  
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      if (error instanceof Error && error.message === "User is not authenticated") {
+        return res.status(401).json({ message: "Unauthorized" });
       }
+      throw error;
     }
-
-    // Update password
-    const hashedPassword = await hashPassword(newPassword);
-    const updatedUser = await storage.updateUser(userId, { password: hashedPassword });
-    
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Log the update
-    await storage.createAuditLog({
-      userId: user.id,
-      action: "password_changed",
-      details: userId === user.id 
-        ? `User changed their password` 
-        : `Admin changed password for user ${userId}`,
-      ipAddress: req.ip
-    });
-
-    res.json({ message: "Password updated successfully" });
   });
 
   app.patch('/api/users/:id/notifications', isAuthenticated, async (req, res) => {
@@ -631,24 +643,23 @@ Verified: ${record.verified ? "Yes" : "No"}
       return res.status(400).json({ message: "Invalid user ID" });
     }
     
-    const user = req.user;
-    
-    // Users can only update their own notifications
-    if (userId !== user.id) {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
-    const notificationSchema = z.object({
-      emailNotifications: z.boolean().optional(),
-      smsNotifications: z.boolean().optional(),
-      accessRequestAlerts: z.boolean().optional(),
-      securityAlerts: z.boolean().optional(),
-    });
-
     try {
       ensureAuthenticated(req);
-      const validatedData = notificationSchema.parse(req.body);
       const user = req.user;
+      
+      // Users can only update their own notifications
+      if (userId !== user.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+  
+      const notificationSchema = z.object({
+        emailNotifications: z.boolean().optional(),
+        smsNotifications: z.boolean().optional(),
+        accessRequestAlerts: z.boolean().optional(),
+        securityAlerts: z.boolean().optional(),
+      });
+  
+      const validatedData = notificationSchema.parse(req.body);
       
       // Get the current user to retrieve existing notification preferences
       const currentUser = await storage.getUser(userId);
@@ -656,13 +667,26 @@ Verified: ${record.verified ? "Yes" : "No"}
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Merge with existing notification preferences
-      const existingPrefs = currentUser.notificationPreferences || {
+      // Define default preferences
+      const defaultPrefs = {
         emailNotifications: true,
         smsNotifications: false,
         accessRequestAlerts: true,
         securityAlerts: true
       };
+      
+      // Parse existing preferences if available
+      let existingPrefs = defaultPrefs;
+      if (currentUser.notificationPreferences) {
+        try {
+          existingPrefs = {
+            ...defaultPrefs,
+            ...JSON.parse(currentUser.notificationPreferences as string)
+          };
+        } catch (e) {
+          console.error('Error parsing notification preferences', e);
+        }
+      }
       
       // Merge the validated data with existing preferences
       const mergedPrefs = {
@@ -692,8 +716,11 @@ Verified: ${record.verified ? "Yes" : "No"}
         preferences: updatedUser.notificationPreferences
       });
     } catch (error) {
-      if (error.name === "ZodError") {
-        return res.status(400).json({ message: "Invalid notification data", errors: error.errors });
+      if (error instanceof Error && error.name === "ZodError") {
+        return res.status(400).json({ 
+          message: "Invalid notification data", 
+          errors: (error as unknown as { errors: any }).errors 
+        });
       }
       throw error;
     }
