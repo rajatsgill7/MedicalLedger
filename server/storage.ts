@@ -347,12 +347,16 @@ export class DatabaseStorage implements IStorage {
     
     // Process notification preferences for each doctor using helper function
     const doctorsWithPrefs = doctors.map(doctor => {
-      const notificationPreferences = parseNotificationPrefs(doctor.notificationPreferences);
+      // Create a new object with all doctor properties
+      const parsedDoctor = { ...doctor };
       
-      return {
-        ...doctor,
-        notificationPreferences
-      };
+      // Set the notification preferences property after spreading to avoid TypeScript issues
+      Object.defineProperty(parsedDoctor, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(doctor.notificationPreferences)
+      });
+      
+      return parsedDoctor as User;
     });
     
     // Create doctor lookup map
@@ -388,12 +392,16 @@ export class DatabaseStorage implements IStorage {
     
     // Process notification preferences for each patient using helper function
     const patientsWithPrefs = patients.map(patient => {
-      const notificationPreferences = parseNotificationPrefs(patient.notificationPreferences);
+      // Create a new object with all patient properties
+      const parsedPatient = { ...patient };
       
-      return {
-        ...patient,
-        notificationPreferences
-      };
+      // Set the notification preferences property after spreading to avoid TypeScript issues
+      Object.defineProperty(parsedPatient, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(patient.notificationPreferences)
+      });
+      
+      return parsedPatient as User;
     });
     
     // Create patient lookup map
@@ -566,17 +574,24 @@ export class MemStorage implements IStorage {
     const user = this.usersMap.get(id);
     if (!user) return undefined;
     
-    // Get notification preferences or set defaults
-    if (!user.notificationPreferences) {
-      user.notificationPreferences = {
-        emailNotifications: true,
-        smsNotifications: false,
-        accessRequestAlerts: true,
-        securityAlerts: true
-      };
-    }
+    // Create a copy of the user
+    const parsedUser = { ...user };
     
-    return user;
+    // Default notification preferences
+    const prefs = user.notificationPreferences || {
+      emailNotifications: true,
+      smsNotifications: false,
+      accessRequestAlerts: true,
+      securityAlerts: true
+    };
+    
+    // Set the notification preferences property after spreading to avoid TypeScript issues
+    Object.defineProperty(parsedUser, 'notificationPreferences', {
+      enumerable: true,
+      value: prefs
+    });
+    
+    return parsedUser as User;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -586,17 +601,24 @@ export class MemStorage implements IStorage {
     
     if (!user) return undefined;
     
-    // Get notification preferences or set defaults
-    if (!user.notificationPreferences) {
-      user.notificationPreferences = {
-        emailNotifications: true,
-        smsNotifications: false,
-        accessRequestAlerts: true,
-        securityAlerts: true
-      };
-    }
+    // Create a copy of the user
+    const parsedUser = { ...user };
     
-    return user;
+    // Default notification preferences
+    const prefs = user.notificationPreferences || {
+      emailNotifications: true,
+      smsNotifications: false,
+      accessRequestAlerts: true,
+      securityAlerts: true
+    };
+    
+    // Set the notification preferences property after spreading to avoid TypeScript issues
+    Object.defineProperty(parsedUser, 'notificationPreferences', {
+      enumerable: true,
+      value: prefs
+    });
+    
+    return parsedUser as User;
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -606,17 +628,24 @@ export class MemStorage implements IStorage {
     
     if (!user) return undefined;
     
-    // Get notification preferences or set defaults
-    if (!user.notificationPreferences) {
-      user.notificationPreferences = {
-        emailNotifications: true,
-        smsNotifications: false,
-        accessRequestAlerts: true,
-        securityAlerts: true
-      };
-    }
+    // Create a copy of the user
+    const parsedUser = { ...user };
     
-    return user;
+    // Default notification preferences
+    const prefs = user.notificationPreferences || {
+      emailNotifications: true,
+      smsNotifications: false,
+      accessRequestAlerts: true,
+      securityAlerts: true
+    };
+    
+    // Set the notification preferences property after spreading to avoid TypeScript issues
+    Object.defineProperty(parsedUser, 'notificationPreferences', {
+      enumerable: true,
+      value: prefs
+    });
+    
+    return parsedUser as User;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -627,53 +656,125 @@ export class MemStorage implements IStorage {
     // Ensure specialty is set to null if not provided
     const specialty = insertUser.specialty === undefined ? null : insertUser.specialty;
     
-    const user: User = { 
+    // Store standardized notification preferences as a field
+    const notificationPreferences = notificationPrefsToString({
+      emailNotifications: true,
+      smsNotifications: false,
+      accessRequestAlerts: true,
+      securityAlerts: true
+    });
+    
+    // Create base user without notification preferences first
+    const baseUser = { 
       ...insertUser, 
       id, 
       createdAt, 
       role,
       specialty,
-      notificationPreferences: {
+      notificationPreferences
+    };
+    
+    // Store the user in the map
+    this.usersMap.set(id, baseUser);
+    
+    // Create a copy of the user for return
+    const parsedUser = { ...baseUser };
+    
+    // Set the proper notification preferences property after spreading
+    Object.defineProperty(parsedUser, 'notificationPreferences', {
+      enumerable: true,
+      value: {
         emailNotifications: true,
         smsNotifications: false,
         accessRequestAlerts: true,
         securityAlerts: true
       }
-    };
-    this.usersMap.set(id, user);
-    return user;
+    });
+    
+    return parsedUser as User;
   }
   
   async updateUser(id: number, update: Partial<User>): Promise<User | undefined> {
     const user = this.usersMap.get(id);
     if (!user) return undefined;
     
-    // Handle notification preferences separately, similar to database storage
-    const { notificationPreferences, ...otherUpdates } = update;
+    // Handle notification preferences separately
+    const { notificationPreferences: updatedPrefs, ...otherUpdates } = update;
+    
+    // Get a copy of the current user
+    const updatedUser = { ...user };
     
     // Apply regular updates
-    const updatedUser = { ...user, ...otherUpdates };
+    Object.assign(updatedUser, otherUpdates);
     
     // Apply notification preferences updates if provided
-    if (notificationPreferences) {
-      updatedUser.notificationPreferences = {
-        ...user.notificationPreferences,
-        ...notificationPreferences
+    if (updatedPrefs) {
+      // Parse existing preferences from stored string representation
+      const existingPrefs = parseNotificationPrefs(user.notificationPreferences);
+      
+      // Merge preferences 
+      const mergedPrefs = {
+        ...(existingPrefs || {}),
+        ...(updatedPrefs || {})
       };
+      
+      // Store serialized preferences
+      updatedUser.notificationPreferences = notificationPrefsToString(mergedPrefs);
     }
     
+    // Update the store
     this.usersMap.set(id, updatedUser);
-    return updatedUser;
+    
+    // Create a parsed copy for return
+    const returnUser = { ...updatedUser };
+    
+    // Set the parsed notification preferences
+    Object.defineProperty(returnUser, 'notificationPreferences', {
+      enumerable: true,
+      value: parseNotificationPrefs(updatedUser.notificationPreferences)
+    });
+    
+    return returnUser as User;
   }
   
   async getAllUsers(): Promise<User[]> {
-    return Array.from(this.usersMap.values());
+    // Get all users from the map
+    const userList = Array.from(this.usersMap.values());
+    
+    // Process each user to have proper notification preferences
+    return userList.map(user => {
+      // Create a new object with all user properties
+      const parsedUser = { ...user };
+      
+      // Set the notification preferences property after spreading to avoid TypeScript issues
+      Object.defineProperty(parsedUser, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(user.notificationPreferences)
+      });
+      
+      return parsedUser as User;
+    });
   }
   
   async getDoctors(): Promise<User[]> {
-    return Array.from(this.usersMap.values()).filter(
+    // Get all doctors from the map
+    const doctorList = Array.from(this.usersMap.values()).filter(
       (user) => user.role === UserRole.DOCTOR
     );
+    
+    // Process each doctor to have proper notification preferences
+    return doctorList.map(doctor => {
+      // Create a new object with all doctor properties
+      const parsedDoctor = { ...doctor };
+      
+      // Set the notification preferences property after spreading to avoid TypeScript issues
+      Object.defineProperty(parsedDoctor, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(doctor.notificationPreferences)
+      });
+      
+      return parsedDoctor as User;
+    });
   }
   
   // Record operations
@@ -744,8 +845,21 @@ export class MemStorage implements IStorage {
     
     // Enrich with doctor info
     const doctorIds = [...new Set(requests.map(req => req.doctorId))];
-    const doctors = Array.from(this.usersMap.values())
+    const rawDoctors = Array.from(this.usersMap.values())
       .filter(user => user.role === UserRole.DOCTOR && doctorIds.includes(user.id));
+    
+    // Process notification preferences for each doctor
+    const doctors = rawDoctors.map(doctor => {
+      const parsedDoctor = { ...doctor };
+      
+      // Set the notification preferences property using helper function
+      Object.defineProperty(parsedDoctor, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(doctor.notificationPreferences)
+      });
+      
+      return parsedDoctor as User;
+    });
     
     // Create doctor lookup map
     const doctorMap = new Map();
@@ -770,8 +884,21 @@ export class MemStorage implements IStorage {
     
     // Enrich with patient info
     const patientIds = [...new Set(requests.map(req => req.patientId))];
-    const patients = Array.from(this.usersMap.values())
+    const rawPatients = Array.from(this.usersMap.values())
       .filter(user => user.role === UserRole.PATIENT && patientIds.includes(user.id));
+    
+    // Process notification preferences for each patient
+    const patients = rawPatients.map(patient => {
+      const parsedPatient = { ...patient };
+      
+      // Set the notification preferences property using helper function
+      Object.defineProperty(parsedPatient, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(patient.notificationPreferences)
+      });
+      
+      return parsedPatient as User;
+    });
     
     // Create patient lookup map
     const patientMap = new Map();
