@@ -124,10 +124,10 @@ export default function SettingsPage() {
   const notificationForm = useForm<z.infer<typeof notificationFormSchema>>({
     resolver: zodResolver(notificationFormSchema),
     defaultValues: {
-      emailNotifications: user?.notificationPreferences?.emailNotifications ?? true,
-      smsNotifications: user?.notificationPreferences?.smsNotifications ?? false,
-      accessRequestAlerts: user?.notificationPreferences?.accessRequestAlerts ?? true,
-      securityAlerts: user?.notificationPreferences?.securityAlerts ?? true,
+      emailNotifications: user?.settings?.notifications?.emailNotifications ?? true,
+      smsNotifications: user?.settings?.notifications?.smsNotifications ?? false,
+      accessRequestAlerts: user?.settings?.notifications?.accessRequestAlerts ?? true,
+      securityAlerts: user?.settings?.notifications?.securityAlerts ?? true,
     },
   });
 

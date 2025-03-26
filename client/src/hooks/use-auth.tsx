@@ -4,17 +4,10 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { insertUserSchema, UserRole } from "@shared/schema";
+import { insertUserSchema, UserRole, NotificationPreferences, UserSettings } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-
-export type NotificationPreferences = {
-  emailNotifications?: boolean;
-  smsNotifications?: boolean;
-  accessRequestAlerts?: boolean;
-  securityAlerts?: boolean;
-};
 
 export type User = {
   id: number;
@@ -24,7 +17,7 @@ export type User = {
   role: string;
   specialty?: string;
   phone?: string;
-  notificationPreferences?: NotificationPreferences;
+  settings?: UserSettings;
 };
 
 type AuthContextType = {

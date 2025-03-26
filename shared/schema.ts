@@ -153,7 +153,6 @@ export const users = pgTable("users", {
   specialty: text("specialty"), // For doctors
   phone: text("phone"), // Phone number
   createdAt: timestamp("created_at").defaultNow(),
-  notificationPreferences: text("notification_preferences"), // Legacy - for backward compatibility
   userSettings: jsonb("user_settings"), // All settings in a unified JSON structure
 });
 
@@ -165,7 +164,6 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
   specialty: true,
   phone: true,
-  notificationPreferences: true,
   userSettings: true,
 });
 
@@ -239,7 +237,6 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).pick({
 
 // Defining types for TypeScript
 export type User = typeof users.$inferSelect & {
-  notificationPreferences?: NotificationPreferences;
   settings?: UserSettings;
 };
 export type InsertUser = z.infer<typeof insertUserSchema>;
