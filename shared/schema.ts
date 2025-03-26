@@ -119,13 +119,15 @@ export function parseUserSettings(settingsInput: string | object | null): UserSe
 // Removed legacy notification preference handling
 
 // Users table
+// Note: fullName, email, specialty, phone are all stored in userSettings.profile JSON
+// and are accessed via virtual properties in the storage implementation
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default(UserRole.PATIENT),
   createdAt: timestamp("created_at").defaultNow(),
-  userSettings: jsonb("user_settings"), // All settings in a unified JSON structure (contains fullName, email, specialty, phone, etc.)
+  userSettings: jsonb("user_settings"), // All settings in a unified JSON structure
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
