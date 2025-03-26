@@ -123,23 +123,15 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  fullName: text("full_name").notNull(),
-  email: text("email").notNull().unique(),
   role: text("role").notNull().default(UserRole.PATIENT),
-  specialty: text("specialty"), // For doctors
-  phone: text("phone"), // Phone number
   createdAt: timestamp("created_at").defaultNow(),
-  userSettings: jsonb("user_settings"), // All settings in a unified JSON structure
+  userSettings: jsonb("user_settings"), // All settings in a unified JSON structure (contains fullName, email, specialty, phone, etc.)
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
-  fullName: true,
-  email: true,
   role: true,
-  specialty: true,
-  phone: true,
   userSettings: true,
 });
 
@@ -214,8 +206,18 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).pick({
 // Defining types for TypeScript
 export type User = typeof users.$inferSelect & {
   settings?: UserSettings;
+  // These are derived from userSettings.profile
+  fullName?: string;
+  email?: string;
+  specialty?: string | null;
+  phone?: string | null;
 };
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema> & {
+  fullName: string;
+  email: string;
+  specialty?: string | null;
+  phone?: string | null;
+};
 
 export type Record = typeof records.$inferSelect;
 export type InsertRecord = z.infer<typeof insertRecordSchema>;

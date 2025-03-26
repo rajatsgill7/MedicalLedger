@@ -75,13 +75,17 @@ export class DatabaseStorage implements IStorage {
       // Get settings from userSettings column (could be a string or object)
       const settings = parseUserSettings(parsedUser.userSettings);
       
-      // Add settings property
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: settings
-      });
+      // Add settings property and virtual properties derived from settings
+      const enhancedUser = {
+        ...parsedUser,
+        settings,
+        fullName: settings?.profile?.fullName,
+        email: settings?.profile?.email,
+        specialty: settings?.profile?.specialty,
+        phone: settings?.profile?.phone
+      };
       
-      return parsedUser as User;
+      return enhancedUser as User;
     } catch (error) {
       console.error('Error in getUser:', error);
       return undefined;
