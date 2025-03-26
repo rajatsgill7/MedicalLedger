@@ -741,6 +741,98 @@ Verified: ${record.verified ? "Yes" : "No"}
     }
   });
 
+  // Update security settings endpoint
+  app.patch('/api/users/:id/security', isAuthenticated, async (req, res) => {
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    try {
+      ensureAuthenticated(req);
+      const user = req.user;
+      
+      // Users can only update their own security settings
+      if (userId !== user.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+  
+      // Create schema for validating security settings data
+      const securitySchema = z.object({
+        twoFactorEnabled: z.boolean().optional(),
+        twoFactorMethod: z.enum(['sms', 'email', 'app']).nullable().optional(),
+        requiredReauthForSensitive: z.boolean().optional(),
+        ipRestrictions: z.array(z.string()).nullable().optional(),
+        sessionTimeout: z.number().nullable().optional(),
+        securityQuestions: z.array(
+          z.object({
+            question: z.string(),
+            answer: z.string()
+          })
+        ).nullable().optional(),
+        recoveryCodesGenerated: z.boolean().optional()
+      });
+  
+      const validatedData = securitySchema.parse(req.body);
+      console.log('Security settings update received:', validatedData);
+      
+      // Get the current user to retrieve existing settings
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Parse existing user settings
+      const currentSettings = parseUserSettings(currentUser.userSettings);
+      
+      // Create updated security settings by merging current with new
+      const updatedSettings = {
+        ...currentSettings,
+        security: {
+          ...currentSettings.security,
+          ...validatedData,
+          // Store the last update timestamp
+          lastUpdated: new Date().toISOString()
+        }
+      };
+      
+      // Convert settings to JSON string
+      const userSettingsStr = userSettingsToString(updatedSettings);
+      
+      // Update the user
+      const updatedUser = await storage.updateUser(userId, {
+        userSettings: userSettingsStr
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Failed to update user security settings" });
+      }
+      
+      // Log the security settings update
+      await storage.createAuditLog({
+        userId: user.id,
+        action: "security_settings_updated",
+        details: `User updated security settings`,
+        ipAddress: req.ip
+      });
+  
+      // Return the updated security settings
+      res.json({
+        message: "Security settings updated",
+        security: updatedSettings.security
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "ZodError") {
+        return res.status(400).json({
+          message: "Invalid security settings data",
+          errors: (error as unknown as { errors: any }).errors
+        });
+      }
+      throw error;
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
