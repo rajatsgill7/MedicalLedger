@@ -112,10 +112,42 @@ export class DatabaseStorage implements IStorage {
     // Try to parse notification preferences from JSON if they exist
     if (user.notificationPreferences) {
       try {
-        notificationPreferences = {
-          ...notificationPreferences,
-          ...JSON.parse(user.notificationPreferences)
-        };
+        if (typeof user.notificationPreferences === 'string') {
+          // It's a JSON string, parse it
+          notificationPreferences = {
+            ...notificationPreferences,
+            ...JSON.parse(user.notificationPreferences)
+          };
+        } else if (typeof user.notificationPreferences === 'object' && 
+                  !Array.isArray(user.notificationPreferences) && 
+                  user.notificationPreferences !== null) {
+          // It's already an object
+          if ('emailNotifications' in user.notificationPreferences || 
+              'smsNotifications' in user.notificationPreferences ||
+              'accessRequestAlerts' in user.notificationPreferences ||
+              'securityAlerts' in user.notificationPreferences) {
+            // If it has the expected properties, use it directly
+            notificationPreferences = {
+              ...notificationPreferences,
+              ...user.notificationPreferences as any
+            };
+          } else if (Object.keys(user.notificationPreferences).length > 0 && 
+                    Object.keys(user.notificationPreferences).some(key => !isNaN(Number(key)))) {
+            // It appears to be a character-by-character array, rebuild the string
+            const jsonStr = Object.values(user.notificationPreferences).join('');
+            // Check if it looks like a valid JSON string
+            if (jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
+              try {
+                notificationPreferences = {
+                  ...notificationPreferences,
+                  ...JSON.parse(jsonStr)
+                };
+              } catch (e) {
+                console.error('Error parsing rebuilt JSON string:', e);
+              }
+            }
+          }
+        }
       } catch (e) {
         console.error('Error parsing notification preferences:', e);
       }
@@ -146,10 +178,42 @@ export class DatabaseStorage implements IStorage {
     // Try to parse notification preferences from JSON if they exist
     if (user.notificationPreferences) {
       try {
-        notificationPreferences = {
-          ...notificationPreferences,
-          ...JSON.parse(user.notificationPreferences)
-        };
+        if (typeof user.notificationPreferences === 'string') {
+          // It's a JSON string, parse it
+          notificationPreferences = {
+            ...notificationPreferences,
+            ...JSON.parse(user.notificationPreferences)
+          };
+        } else if (typeof user.notificationPreferences === 'object' && 
+                  !Array.isArray(user.notificationPreferences) && 
+                  user.notificationPreferences !== null) {
+          // It's already an object
+          if ('emailNotifications' in user.notificationPreferences || 
+              'smsNotifications' in user.notificationPreferences ||
+              'accessRequestAlerts' in user.notificationPreferences ||
+              'securityAlerts' in user.notificationPreferences) {
+            // If it has the expected properties, use it directly
+            notificationPreferences = {
+              ...notificationPreferences,
+              ...user.notificationPreferences as any
+            };
+          } else if (Object.keys(user.notificationPreferences).length > 0 && 
+                    Object.keys(user.notificationPreferences).some(key => !isNaN(Number(key)))) {
+            // It appears to be a character-by-character array, rebuild the string
+            const jsonStr = Object.values(user.notificationPreferences).join('');
+            // Check if it looks like a valid JSON string
+            if (jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
+              try {
+                notificationPreferences = {
+                  ...notificationPreferences,
+                  ...JSON.parse(jsonStr)
+                };
+              } catch (e) {
+                console.error('Error parsing rebuilt JSON string:', e);
+              }
+            }
+          }
+        }
       } catch (e) {
         console.error('Error parsing notification preferences:', e);
       }

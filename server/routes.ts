@@ -200,6 +200,8 @@ Verified: ${record.verified ? "Yes" : "No"}
       return res.status(400).json({ message: "Invalid patient ID" });
     }
     
+    // Use type guard to ensure req.user is defined
+    ensureAuthenticated(req);
     const user = req.user;
     
     // Check if user has access to patient records
@@ -233,6 +235,8 @@ Verified: ${record.verified ? "Yes" : "No"}
       return res.status(400).json({ message: "Invalid doctor ID" });
     }
     
+    // Use type guard to ensure req.user is defined
+    ensureAuthenticated(req);
     const user = req.user;
     
     // Doctors can only view their own accessible records
@@ -280,6 +284,9 @@ Verified: ${record.verified ? "Yes" : "No"}
   app.post('/api/records', isAuthenticated, async (req, res) => {
     try {
       const recordData = insertRecordSchema.parse(req.body);
+      
+      // Use type guard to ensure req.user is defined
+      ensureAuthenticated(req);
       const user = req.user;
       
       // Verify access rights
