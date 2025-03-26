@@ -574,8 +574,23 @@ Verified: ${record.verified ? "Yes" : "No"}
       console.log('Profile update request:', req.body);
       console.log('Validated data:', validatedData);
       
+      // Transform flat profile data into settings structure
+      const transformedData = {
+        settings: {
+          profile: {
+            ...(validatedData.fullName ? { fullName: validatedData.fullName } : {}),
+            ...(validatedData.email ? { email: validatedData.email } : {}),
+            ...(validatedData.specialty ? { specialty: validatedData.specialty } : {}),
+            ...(validatedData.phone ? { phone: validatedData.phone } : {}),
+            lastUpdated: new Date().toISOString(),
+          }
+        }
+      };
+      
+      console.log('Transformed data for database:', transformedData);
+      
       // Update user
-      const updatedUser = await storage.updateUser(userId, validatedData);
+      const updatedUser = await storage.updateUser(userId, transformedData);
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -807,12 +822,9 @@ Verified: ${record.verified ? "Yes" : "No"}
         }
       };
       
-      // Convert settings to JSON string
-      const userSettingsStr = userSettingsToString(updatedSettings);
-      
-      // Update the user
+      // Update the user with the new settings structure
       const updatedUser = await storage.updateUser(userId, {
-        userSettings: userSettingsStr
+        settings: updatedSettings
       });
       
       if (!updatedUser) {
@@ -840,6 +852,135 @@ Verified: ${record.verified ? "Yes" : "No"}
         });
       }
       throw error;
+    }
+  });
+  
+  // Handle emergency override
+  app.post('/api/emergency-override', isAuthenticated, hasRole(["doctor", "admin"]), async (req, res) => {
+    try {
+      ensureAuthenticated(req);
+      
+      // Create an audit log for the emergency access
+      await storage.createAuditLog({
+        userId: req.user.id,
+        action: "emergency_override",
+        details: `Emergency override initiated by ${req.user.role} ${req.user.fullName}`,
+        resourceType: "access_control",
+        resourceId: null,
+        metadata: JSON.stringify({
+          reason: req.body.reason || "Emergency medical situation",
+          timestamp: req.body.timestamp || new Date().toISOString()
+        }),
+        ipAddress: req.ip || "unknown"
+      });
+      
+      res.status(200).json({ 
+        success: true, 
+        message: "Emergency access granted and logged" 
+      });
+    } catch (error) {
+      console.error("Error processing emergency override:", error);
+      res.status(500).json({ message: "Failed to process emergency override" });
+    }
+  });
+  
+  // Update session timeout
+  app.post('/api/session-timeout', isAuthenticated, async (req, res) => {
+    try {
+      ensureAuthenticated(req);
+      
+      // Get current user
+      const user = await storage.getUser(req.user.id);
+      if (!user || !user.settings) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Get timeout value from settings
+      const sessionTimeout = user.settings.security?.sessionTimeout;
+      
+      // If no session timeout is set, return default value
+      if (!sessionTimeout) {
+        return res.status(200).json({ 
+          success: true,
+          sessionTimeout: 30 // Default 30 minutes
+        });
+      }
+      
+      // Return the session timeout
+      res.status(200).json({ 
+        success: true,
+        sessionTimeout
+      });
+    } catch (error) {
+      console.error("Error getting session timeout:", error);
+      res.status(500).json({ message: "Failed to get session timeout" });
+    }
+  });
+  
+  // Generate recovery codes
+  app.post('/api/users/:id/generate-recovery-codes', isAuthenticated, async (req, res) => {
+    try {
+      ensureAuthenticated(req);
+      const userId = parseInt(req.params.id, 10);
+      
+      // Check authorization - users can only generate their own recovery codes
+      if (req.user.id !== userId && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Unauthorized to generate recovery codes for this user" });
+      }
+      
+      // Generate 10 random recovery codes
+      const recoveryCodes: string[] = [];
+      for (let i = 0; i < 10; i++) {
+        const code = Array.from(
+          { length: 4 },
+          () => Math.random().toString(36).substring(2, 6)
+        ).join('-');
+        recoveryCodes.push(code);
+      }
+      
+      // Get current user settings
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Update user's security settings
+      const currentSettings = user.settings || {};
+      const updatedSettings = {
+        ...currentSettings,
+        security: {
+          ...(currentSettings.security || {}),
+          recoveryCodesGenerated: true,
+          recoveryCodes: recoveryCodes
+        }
+      };
+      
+      // Save updated settings using the new settings structure
+      await storage.updateUser(userId, {
+        settings: updatedSettings
+      });
+      
+      // Create audit log
+      await storage.createAuditLog({
+        userId: req.user.id,
+        action: "recovery_codes_generated",
+        details: `Recovery codes generated for user`,
+        resourceType: "user_security",
+        resourceId: userId,
+        metadata: JSON.stringify({
+          timestamp: new Date().toISOString()
+        }),
+        ipAddress: req.ip || "unknown"
+      });
+      
+      // Return the codes to display once to the user
+      res.status(200).json({ 
+        success: true, 
+        recoveryCodes
+      });
+    } catch (error) {
+      console.error("Error generating recovery codes:", error);
+      res.status(500).json({ message: "Failed to generate recovery codes" });
     }
   });
 

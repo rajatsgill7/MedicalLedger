@@ -40,10 +40,23 @@ import {
   Shield, 
   AlertCircle, 
   Smartphone, 
-  Mail 
+  Mail,
+  ShieldAlert,
+  KeyRound,
+  Info
 } from "lucide-react";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Form schemas
 const profileFormSchema = z.object({
@@ -84,15 +97,45 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { isPatient, isDoctor, isAdmin } = useRole();
   const [activeTab, setActiveTab] = useState("profile");
+  const [recoveryCodesDialogOpen, setRecoveryCodesDialogOpen] = useState(false);
+  const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
+  
+  // Set up recovery codes generation mutation
+  const generateRecoveryCodesMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      const res = await apiRequest("POST", `/api/users/${user.id}/generate-recovery-codes`);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      setGeneratedCodes(data.recoveryCodes);
+      setRecoveryCodesDialogOpen(true);
+      
+      // Refresh user data to update recoveryCodesGenerated flag
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      
+      toast({
+        title: "Recovery codes generated",
+        description: "Store these codes in a secure location. They will only be shown once."
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to generate recovery codes",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Profile form
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      fullName: user?.fullName || "",
-      email: user?.email || "",
-      specialty: user?.specialty || "",
-      phone: user?.phone || "",
+      fullName: user?.settings?.profile?.fullName || user?.fullName || "",
+      email: user?.settings?.profile?.email || user?.email || "",
+      specialty: user?.settings?.profile?.specialty || user?.specialty || "",
+      phone: user?.settings?.profile?.phone || user?.phone || "",
     },
   });
 
@@ -569,6 +612,45 @@ export default function SettingsPage() {
                         )}
                       />
 
+
+
+                      <div className="rounded-md border p-4 shadow-sm bg-card">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <div className="flex items-center">
+                              <KeyRound className="h-5 w-5 mr-2 text-primary" />
+                              <span className="text-sm font-medium">Recovery Codes</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Generate backup codes to access your account if you lose your two-factor device
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => generateRecoveryCodesMutation.mutate()}
+                            className="flex items-center gap-1 h-9"
+                            disabled={generateRecoveryCodesMutation.isPending}
+                          >
+                            <KeyRound className="h-3.5 w-3.5 mr-1" />
+                            <span>
+                              {generateRecoveryCodesMutation.isPending 
+                                ? "Generating..." 
+                                : user?.settings?.security?.recoveryCodesGenerated 
+                                  ? "Generate New Codes" 
+                                  : "Generate Codes"
+                              }
+                            </span>
+                          </Button>
+                        </div>
+                        {user?.settings?.security?.recoveryCodesGenerated && (
+                          <div className="flex items-center text-xs rounded-md bg-muted p-2 text-muted-foreground">
+                            <Info className="h-3.5 w-3.5 mr-1.5" />
+                            <span>Recovery codes are stored securely. Generate new ones to replace existing codes.</span>
+                          </div>
+                        )}
+                      </div>
+
                       <FormField
                         control={advancedSecurityForm.control}
                         name="receiveLoginAlerts"
@@ -617,43 +699,9 @@ export default function SettingsPage() {
                         )}
                       />
                       
-                      <FormField
-                        control={advancedSecurityForm.control}
-                        name="recoveryCodesGenerated"
-                        render={({ field }) => (
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <div className="flex items-center">
-                                <Key className="h-4 w-4 mr-2" />
-                                <span className="text-sm font-medium">Recovery Codes</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                {field.value ? 
-                                  "Recovery codes have been generated for account recovery" :
-                                  "Generate recovery codes to regain access if you lose your 2FA device"
-                                }
-                              </p>
-                            </div>
-                            
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              type="button"
-                              onClick={() => {
-                                // In a real app, this would generate and show recovery codes
-                                advancedSecurityForm.setValue("recoveryCodesGenerated", true);
-                                toast({
-                                  title: "Recovery Codes Generated",
-                                  description: "Your recovery codes have been generated. Store them in a safe place.",
-                                });
-                              }}
-                              disabled={field.value}
-                            >
-                              {field.value ? "Generated" : "Generate Codes"}
-                            </Button>
-                          </div>
-                        )}
-                      />
+
+                      
+
                       
                       <FormField
                         control={advancedSecurityForm.control}
@@ -847,6 +895,34 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Recovery Codes Dialog */}
+      <AlertDialog open={recoveryCodesDialogOpen} onOpenChange={setRecoveryCodesDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <KeyRound className="h-5 w-5 text-blue-500 mr-2" />
+              Recovery Codes Generated
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                <div className="mb-4">These are your one-time use recovery codes. Store them in a secure place. Each code can only be used once to recover your account.</div>
+                <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded font-mono text-sm">
+                  {generatedCodes.map((code, index) => (
+                    <div key={index} className="mb-1">{code}</div>
+                  ))}
+                </div>
+                <div className="mt-4 text-amber-600 dark:text-amber-400 font-semibold text-sm">
+                  Warning: These codes won't be shown again!
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>Done</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }

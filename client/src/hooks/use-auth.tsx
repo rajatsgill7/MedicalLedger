@@ -12,12 +12,14 @@ import { z } from "zod";
 export type User = {
   id: number;
   username: string;
-  fullName: string;
-  email: string;
   role: string;
-  specialty?: string;
-  phone?: string;
-  settings?: UserSettings;
+  userSettings?: any; // Raw userSettings from database
+  settings?: UserSettings; // Parsed settings object
+  // These are derived from settings.profile
+  fullName?: string;
+  email?: string;
+  specialty?: string | null;
+  phone?: string | null;
 };
 
 type AuthContextType = {

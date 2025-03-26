@@ -497,36 +497,7 @@ export default function AdminAccessControl() {
         </CardContent>
       </Card>
 
-      {/* Emergency Override Section */}
-      <Card className="border-red-300 dark:border-red-800 border mb-6">
-        <CardContent className="p-5">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <ShieldAlert className="h-6 w-6 text-red-500 dark:text-red-400" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Emergency Access Protocol</h3>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                In emergency situations, administrators can temporarily override access controls to ensure timely medical care. 
-                All emergency overrides are logged and require full justification.
-              </p>
-              <div className="mt-4">
-                <Button 
-                  variant="destructive"
-                  onClick={() => {
-                    toast({
-                      title: "Emergency Override",
-                      description: "This action requires additional authorization. Please contact the on-call security officer."
-                    });
-                  }}
-                >
-                  Emergency Override
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* HIPAA Compliance Notice */}
       <div className="p-5 bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 rounded-md">

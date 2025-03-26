@@ -75,13 +75,17 @@ export class DatabaseStorage implements IStorage {
       // Get settings from userSettings column (could be a string or object)
       const settings = parseUserSettings(parsedUser.userSettings);
       
-      // Add settings property
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: settings
-      });
+      // Add settings property and virtual properties derived from settings
+      const enhancedUser = {
+        ...parsedUser,
+        settings,
+        fullName: settings?.profile?.fullName,
+        email: settings?.profile?.email,
+        specialty: settings?.profile?.specialty,
+        phone: settings?.profile?.phone
+      };
       
-      return parsedUser as User;
+      return enhancedUser as User;
     } catch (error) {
       console.error('Error in getUser:', error);
       return undefined;
@@ -104,13 +108,17 @@ export class DatabaseStorage implements IStorage {
       // Get settings from userSettings column (could be a string or object)
       const settings = parseUserSettings(parsedUser.userSettings);
       
-      // Add settings property
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: settings
-      });
+      // Add settings property and virtual properties derived from settings
+      const enhancedUser = {
+        ...parsedUser,
+        settings,
+        fullName: settings?.profile?.fullName,
+        email: settings?.profile?.email,
+        specialty: settings?.profile?.specialty,
+        phone: settings?.profile?.phone
+      };
       
-      return parsedUser as User;
+      return enhancedUser as User;
     } catch (error) {
       console.error('Error in getUserByUsername:', error);
       return undefined;
@@ -119,27 +127,11 @@ export class DatabaseStorage implements IStorage {
   
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
-      // Get user from database
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, email));
-      
-      if (!user) return undefined;
-      
-      // Create a copy for adding virtual properties
-      const parsedUser = { ...user };
-      
-      // Get settings from userSettings column (could be a string or object)
-      const settings = parseUserSettings(parsedUser.userSettings);
-      
-      // Add settings property
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: settings
-      });
-      
-      return parsedUser as User;
+      // In the new structure, email is in the userSettings.profile
+      // We need to get all users and filter by settings
+      const users = await this.getAllUsers();
+      const user = users.find(u => u.email === email);
+      return user;
     } catch (error) {
       console.error('Error in getUserByEmail:', error);
       return undefined;
@@ -290,11 +282,62 @@ export class DatabaseStorage implements IStorage {
           value: finalSettings
         });
         
+        // Add virtual properties derived from settings
+        Object.defineProperty(parsedUser, 'fullName', {
+          enumerable: true,
+          value: finalSettings?.profile?.fullName
+        });
+        
+        Object.defineProperty(parsedUser, 'email', {
+          enumerable: true,
+          value: finalSettings?.profile?.email
+        });
+        
+        Object.defineProperty(parsedUser, 'specialty', {
+          enumerable: true,
+          value: finalSettings?.profile?.specialty
+        });
+        
+        Object.defineProperty(parsedUser, 'phone', {
+          enumerable: true,
+          value: finalSettings?.profile?.phone
+        });
+        
         return parsedUser as User;
       }
       
-      // If no updates were made, return the current user
-      return currentUser as User;
+      // If no updates were made, return the current user with virtual properties
+      const parsedUser = { ...currentUser };
+      
+      // Add virtual properties derived from settings
+      const settings = parseUserSettings(currentUser.userSettings);
+      
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: settings
+      });
+      
+      Object.defineProperty(parsedUser, 'fullName', {
+        enumerable: true,
+        value: settings?.profile?.fullName
+      });
+      
+      Object.defineProperty(parsedUser, 'email', {
+        enumerable: true,
+        value: settings?.profile?.email
+      });
+      
+      Object.defineProperty(parsedUser, 'specialty', {
+        enumerable: true,
+        value: settings?.profile?.specialty
+      });
+      
+      Object.defineProperty(parsedUser, 'phone', {
+        enumerable: true,
+        value: settings?.profile?.phone
+      });
+      
+      return parsedUser as User;
     } catch (error) {
       console.error('Error in updateUser:', error);
       throw error;
@@ -313,13 +356,17 @@ export class DatabaseStorage implements IStorage {
         // Parse settings from userSettings column
         const settings = parseUserSettings(user.userSettings);
         
-        // Add settings property
-        Object.defineProperty(parsedUser, 'settings', {
-          enumerable: true,
-          value: settings
-        });
+        // Add settings property and virtual properties derived from settings
+        const enhancedUser = {
+          ...parsedUser,
+          settings,
+          fullName: settings?.profile?.fullName,
+          email: settings?.profile?.email,
+          specialty: settings?.profile?.specialty,
+          phone: settings?.profile?.phone
+        };
         
-        return parsedUser as User;
+        return enhancedUser as User;
       });
     } catch (error) {
       console.error('Error in getAllUsers:', error);
@@ -342,13 +389,17 @@ export class DatabaseStorage implements IStorage {
         // Parse settings from userSettings column
         const settings = parseUserSettings(doctor.userSettings);
         
-        // Add settings property
-        Object.defineProperty(parsedDoctor, 'settings', {
-          enumerable: true,
-          value: settings
-        });
+        // Add settings property and virtual properties derived from settings
+        const enhancedDoctor = {
+          ...parsedDoctor,
+          settings,
+          fullName: settings?.profile?.fullName,
+          email: settings?.profile?.email,
+          specialty: settings?.profile?.specialty,
+          phone: settings?.profile?.phone
+        };
         
-        return parsedDoctor as User;
+        return enhancedDoctor as User;
       });
     } catch (error) {
       console.error('Error in getDoctors:', error);
@@ -584,14 +635,17 @@ export class MemStorage implements IStorage {
     // Add settings from userSettings if it exists
     const settings = parseUserSettings(user.userSettings);
     
-    // Create a copy with settings property
-    const parsedUser = { ...user };
-    Object.defineProperty(parsedUser, 'settings', {
-      enumerable: true,
-      value: settings
-    });
+    // Add settings property and virtual properties derived from settings
+    const enhancedUser = {
+      ...user,
+      settings,
+      fullName: settings?.profile?.fullName,
+      email: settings?.profile?.email,
+      specialty: settings?.profile?.specialty,
+      phone: settings?.profile?.phone
+    };
     
-    return parsedUser;
+    return enhancedUser as User;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -600,14 +654,17 @@ export class MemStorage implements IStorage {
         // Add settings from userSettings if it exists
         const settings = parseUserSettings(user.userSettings);
         
-        // Create a copy with settings property
-        const parsedUser = { ...user };
-        Object.defineProperty(parsedUser, 'settings', {
-          enumerable: true,
-          value: settings
-        });
+        // Add settings property and virtual properties derived from settings
+        const enhancedUser = {
+          ...user,
+          settings,
+          fullName: settings?.profile?.fullName,
+          email: settings?.profile?.email,
+          specialty: settings?.profile?.specialty,
+          phone: settings?.profile?.phone
+        };
         
-        return parsedUser;
+        return enhancedUser as User;
       }
     }
     return undefined;
@@ -619,14 +676,17 @@ export class MemStorage implements IStorage {
         // Add settings from userSettings if it exists
         const settings = parseUserSettings(user.userSettings);
         
-        // Create a copy with settings property
-        const parsedUser = { ...user };
-        Object.defineProperty(parsedUser, 'settings', {
-          enumerable: true,
-          value: settings
-        });
+        // Add settings property and virtual properties derived from settings
+        const enhancedUser = {
+          ...user,
+          settings,
+          fullName: settings?.profile?.fullName,
+          email: settings?.profile?.email,
+          specialty: settings?.profile?.specialty,
+          phone: settings?.profile?.phone
+        };
         
-        return parsedUser;
+        return enhancedUser as User;
       }
     }
     return undefined;
@@ -697,63 +757,78 @@ export class MemStorage implements IStorage {
     Object.assign(user, otherUpdates);
     
     // Handle settings update
+    let finalSettings = parseUserSettings(user.userSettings);
+    
     if (updatedSettings) {
-      // Parse current settings
-      const currentSettings = parseUserSettings(user.userSettings);
-      
       // Merge settings
-      const mergedSettings = {
-        ...currentSettings,
+      finalSettings = {
+        ...finalSettings,
         ...updatedSettings
       };
       
       // Update userSettings string
-      user.userSettings = userSettingsToString(mergedSettings);
+      user.userSettings = userSettingsToString(finalSettings);
       
       // Update virtual settings property
-      user.settings = mergedSettings;
+      user.settings = finalSettings;
     }
     
-    return user;
+    // Create a copy of the user with all virtual properties
+    const enhancedUser = {
+      ...user,
+      settings: finalSettings,
+      fullName: finalSettings?.profile?.fullName,
+      email: finalSettings?.profile?.email,
+      specialty: finalSettings?.profile?.specialty,
+      phone: finalSettings?.profile?.phone
+    };
+    
+    return enhancedUser as User;
   }
 
   async getAllUsers(): Promise<User[]> {
     const users = Array.from(this.usersMap.values());
     
-    // Add settings to each user
+    // Process each user to have proper settings and virtual properties
     return users.map(user => {
-      // Parse settings
+      // Parse settings from userSettings column
       const settings = parseUserSettings(user.userSettings);
       
-      // Create a copy with settings property
-      const parsedUser = { ...user };
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: settings
-      });
+      // Add settings property and virtual properties derived from settings
+      const enhancedUser = {
+        ...user,
+        settings,
+        fullName: settings?.profile?.fullName,
+        email: settings?.profile?.email,
+        specialty: settings?.profile?.specialty,
+        phone: settings?.profile?.phone
+      };
       
-      return parsedUser;
+      return enhancedUser as User;
     });
   }
 
   async getDoctors(): Promise<User[]> {
     const users = Array.from(this.usersMap.values());
     
-    // Add settings to each doctor
+    // Process each doctor to have proper settings and virtual properties
     return users
       .filter(user => user.role === "doctor")
       .map(doctor => {
-        // Parse settings
+        // Parse settings from userSettings column
         const settings = parseUserSettings(doctor.userSettings);
         
-        // Create a copy with settings property
-        const parsedDoctor = { ...doctor };
-        Object.defineProperty(parsedDoctor, 'settings', {
-          enumerable: true,
-          value: settings
-        });
+        // Add settings property and virtual properties derived from settings
+        const enhancedDoctor = {
+          ...doctor,
+          settings,
+          fullName: settings?.profile?.fullName,
+          email: settings?.profile?.email,
+          specialty: settings?.profile?.specialty,
+          phone: settings?.profile?.phone
+        };
         
-        return parsedDoctor;
+        return enhancedDoctor as User;
       });
   }
 

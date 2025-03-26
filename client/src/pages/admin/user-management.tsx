@@ -14,7 +14,8 @@ import {
   Folder,
   AlertTriangle,
   Save,
-  X
+  X,
+  UserPlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,7 +77,19 @@ const editUserSchema = z.object({
   role: z.string(),
 });
 
+// Define add user form schema
+const addUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  fullName: z.string().min(3, "Full name must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  specialty: z.string().optional(),
+  phone: z.string().optional(),
+  role: z.string(),
+});
+
 type EditUserFormValues = z.infer<typeof editUserSchema>;
+type AddUserFormValues = z.infer<typeof addUserSchema>;
 
 export default function AdminUserManagement() {
   const { toast } = useToast();
@@ -84,6 +97,7 @@ export default function AdminUserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const itemsPerPage = 10;
 
   // Fetch all users
@@ -100,6 +114,20 @@ export default function AdminUserManagement() {
       specialty: "",
       phone: "",
       role: "",
+    },
+  });
+  
+  // Setup form for adding user
+  const addForm = useForm<AddUserFormValues>({
+    resolver: zodResolver(addUserSchema),
+    defaultValues: {
+      username: "",
+      fullName: "",
+      email: "",
+      password: "",
+      specialty: "",
+      phone: "",
+      role: UserRole.PATIENT,
     },
   });
 
@@ -144,6 +172,34 @@ export default function AdminUserManagement() {
       });
     },
   });
+  
+  // Mutation for creating a new user
+  const createUserMutation = useMutation({
+    mutationFn: async (data: AddUserFormValues) => {
+      const res = await apiRequest("POST", "/api/register", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User created",
+        description: "New user has been successfully created"
+      });
+      
+      // Close modal and reset form
+      setIsAddDialogOpen(false);
+      addForm.reset();
+      
+      // Refetch user data to update UI
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Creation failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Filter users based on search term
   const filteredUsers = users?.filter(user => 
@@ -181,11 +237,12 @@ export default function AdminUserManagement() {
 
   // Handler for adding a new user
   const handleAddUser = () => {
-    // In a real app, this would open a create user modal
-    toast({
-      title: "Add user",
-      description: "Creating a new user"
-    });
+    setIsAddDialogOpen(true);
+  };
+  
+  // Handler for saving new user
+  const handleSaveNewUser = (values: AddUserFormValues) => {
+    createUserMutation.mutate(values);
   };
 
   // Handler for exporting data
@@ -336,12 +393,171 @@ export default function AdminUserManagement() {
         </DialogContent>
       </Dialog>
       
+      {/* Add User Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>
+              Create a new user account. All fields are required.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...addForm}>
+            <form onSubmit={addForm.handleSubmit(handleSaveNewUser)} className="space-y-4">
+              <FormField
+                control={addForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter username" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={addForm.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter full name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={addForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter email address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={addForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Create a password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={addForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+                        <SelectItem value={UserRole.DOCTOR}>Doctor</SelectItem>
+                        <SelectItem value={UserRole.PATIENT}>Patient</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {addForm.watch("role") === UserRole.DOCTOR && (
+                <FormField
+                  control={addForm.control}
+                  name="specialty"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Specialty</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter specialty" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              <FormField
+                control={addForm.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter phone number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter className="pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                  className="mr-2"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={createUserMutation.isPending}
+                >
+                  {createUserMutation.isPending ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating...
+                    </span>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Create User
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <Button 
             onClick={handleAddUser}
-            className="bg-secondary hover:bg-secondary-dark"
+            className="bg-primary hover:bg-primary/90"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Add User
