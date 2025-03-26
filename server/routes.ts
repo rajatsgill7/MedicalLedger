@@ -955,9 +955,9 @@ Verified: ${record.verified ? "Yes" : "No"}
         }
       };
       
-      // Save updated settings
+      // Save updated settings using the new settings structure
       await storage.updateUser(userId, {
-        userSettings: JSON.stringify(updatedSettings)
+        settings: updatedSettings
       });
       
       // Create audit log
