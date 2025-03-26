@@ -2,6 +2,7 @@ import { db } from "../server/db";
 import { users, records, accessRequests, auditLogs, UserRole } from "../shared/schema";
 import { hashPassword } from "../server/auth";
 import { userSettingsToString } from "../shared/schema";
+import { pool } from "../server/db";
 
 async function resetDatabase() {
   try {
@@ -9,6 +10,15 @@ async function resetDatabase() {
     
     // Clear all tables
     console.log("Deleting data from all tables...");
+    
+    // Clear the session table first (to prevent session errors)
+    try {
+      await pool.query('DELETE FROM "session"');
+      console.log("Session table cleared successfully");
+    } catch (err) {
+      console.log("Note: Session table not found or couldn't be cleared. This is normal if it doesn't exist yet.");
+    }
+    
     await db.delete(auditLogs);
     await db.delete(accessRequests);
     await db.delete(records);
