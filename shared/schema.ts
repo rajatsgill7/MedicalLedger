@@ -67,8 +67,8 @@ export function userSettingsToString(settings: UserSettings): string {
   return JSON.stringify(settings);
 }
 
-// Function to parse user settings from a string
-export function parseUserSettings(settingsStr: string | null): UserSettings {
+// Function to parse user settings from a string or object
+export function parseUserSettings(settingsInput: string | object | null): UserSettings {
   const defaultSettings: UserSettings = {
     profile: {
       fullName: '',
@@ -94,12 +94,21 @@ export function parseUserSettings(settingsStr: string | null): UserSettings {
     }
   };
   
-  if (!settingsStr) return defaultSettings;
+  if (!settingsInput) return defaultSettings;
   
   try {
+    // If it's already an object, use it directly
+    if (typeof settingsInput === 'object') {
+      return {
+        ...defaultSettings,
+        ...settingsInput
+      };
+    }
+    
+    // Otherwise parse it as JSON string
     return {
       ...defaultSettings,
-      ...JSON.parse(settingsStr)
+      ...JSON.parse(settingsInput)
     };
   } catch (e) {
     console.error('Error parsing user settings:', e);

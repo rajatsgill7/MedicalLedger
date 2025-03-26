@@ -67,16 +67,17 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     try {
+      // Get user from database
       const [user] = await db.select().from(users).where(eq(users.id, id));
       if (!user) return undefined;
       
-      // Parse user and create a copy for adding virtual properties
+      // Create a copy for adding virtual properties
       const parsedUser = { ...user };
       
-      // Parse user settings from JSON string
-      const settings = parseUserSettings(user.userSettings);
+      // Get settings from userSettings column (could be a string or object)
+      const settings = parseUserSettings(parsedUser.userSettings);
       
-      // Add settings property to user object
+      // Add settings property
       Object.defineProperty(parsedUser, 'settings', {
         enumerable: true,
         value: settings
@@ -91,6 +92,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
+      // Get user from database
       const [user] = await db
         .select()
         .from(users)
@@ -98,33 +100,13 @@ export class DatabaseStorage implements IStorage {
       
       if (!user) return undefined;
       
-      // Parse notification preferences using the helper function and attach as non-DB field
+      // Create a copy for adding virtual properties
       const parsedUser = { ...user };
       
-      // Set the legacy notification preferences property for backward compatibility
-      Object.defineProperty(parsedUser, 'notificationPreferences', {
-        enumerable: true,
-        value: parseNotificationPrefs(user.notificationPreferences)
-      });
+      // Get settings from userSettings column (could be a string or object)
+      const settings = parseUserSettings(parsedUser.userSettings);
       
-      // Create default settings based on existing data (until migration is complete)
-      const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
-      const settings: UserSettings = {
-        profile: {
-          fullName: user.fullName,
-          email: user.email,
-          phone: user.phone,
-          specialty: user.specialty,
-        },
-        notifications: {
-          ...notificationPrefs
-        },
-        security: {
-          twoFactorEnabled: false,
-          requiredReauthForSensitive: true
-        }
-      };
-      
+      // Add settings property
       Object.defineProperty(parsedUser, 'settings', {
         enumerable: true,
         value: settings
@@ -132,66 +114,14 @@ export class DatabaseStorage implements IStorage {
       
       return parsedUser as User;
     } catch (error) {
-      // Handle error if the user_settings column doesn't exist yet
-      console.error('Error in getUserByUsername. Database may need migration:', error);
-      
-      // Fallback to just getting user without user_settings
-      const [userBasic] = await db
-        .select({
-          id: users.id,
-          username: users.username,
-          password: users.password,
-          fullName: users.fullName,
-          email: users.email,
-          role: users.role,
-          specialty: users.specialty,
-          phone: users.phone,
-          createdAt: users.createdAt,
-          notificationPreferences: users.notificationPreferences
-        })
-        .from(users)
-        .where(eq(users.username, username));
-        
-      if (!userBasic) return undefined;
-      
-      // Parse notification preferences using the helper function and attach as non-DB field
-      const parsedUser = { ...userBasic };
-      
-      // Set the notification preferences property for backward compatibility
-      Object.defineProperty(parsedUser, 'notificationPreferences', {
-        enumerable: true,
-        value: parseNotificationPrefs(userBasic.notificationPreferences)
-      });
-      
-      // Create default settings based on existing data (until migration is complete)
-      const notificationPrefs = parseNotificationPrefs(userBasic.notificationPreferences);
-      const settings: UserSettings = {
-        profile: {
-          fullName: userBasic.fullName,
-          email: userBasic.email,
-          phone: userBasic.phone,
-          specialty: userBasic.specialty,
-        },
-        notifications: {
-          ...notificationPrefs
-        },
-        security: {
-          twoFactorEnabled: false,
-          requiredReauthForSensitive: true
-        }
-      };
-      
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: settings
-      });
-      
-      return parsedUser as User;
+      console.error('Error in getUserByUsername:', error);
+      return undefined;
     }
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
+      // Get user from database
       const [user] = await db
         .select()
         .from(users)
@@ -199,33 +129,13 @@ export class DatabaseStorage implements IStorage {
       
       if (!user) return undefined;
       
-      // Parse notification preferences using the helper function and attach as non-DB field
+      // Create a copy for adding virtual properties
       const parsedUser = { ...user };
       
-      // Set the legacy notification preferences property for backward compatibility
-      Object.defineProperty(parsedUser, 'notificationPreferences', {
-        enumerable: true,
-        value: parseNotificationPrefs(user.notificationPreferences)
-      });
+      // Get settings from userSettings column (could be a string or object)
+      const settings = parseUserSettings(parsedUser.userSettings);
       
-      // Create default settings based on existing data (until migration is complete)
-      const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
-      const settings: UserSettings = {
-        profile: {
-          fullName: user.fullName,
-          email: user.email,
-          phone: user.phone,
-          specialty: user.specialty,
-        },
-        notifications: {
-          ...notificationPrefs
-        },
-        security: {
-          twoFactorEnabled: false,
-          requiredReauthForSensitive: true
-        }
-      };
-      
+      // Add settings property
       Object.defineProperty(parsedUser, 'settings', {
         enumerable: true,
         value: settings
@@ -233,61 +143,8 @@ export class DatabaseStorage implements IStorage {
       
       return parsedUser as User;
     } catch (error) {
-      // Handle error if the user_settings column doesn't exist yet
-      console.error('Error in getUserByEmail. Database may need migration:', error);
-      
-      // Fallback to just getting user without user_settings
-      const [userBasic] = await db
-        .select({
-          id: users.id,
-          username: users.username,
-          password: users.password,
-          fullName: users.fullName,
-          email: users.email,
-          role: users.role,
-          specialty: users.specialty,
-          phone: users.phone,
-          createdAt: users.createdAt,
-          notificationPreferences: users.notificationPreferences
-        })
-        .from(users)
-        .where(eq(users.email, email));
-        
-      if (!userBasic) return undefined;
-      
-      // Parse notification preferences using the helper function and attach as non-DB field
-      const parsedUser = { ...userBasic };
-      
-      // Set the notification preferences property for backward compatibility
-      Object.defineProperty(parsedUser, 'notificationPreferences', {
-        enumerable: true,
-        value: parseNotificationPrefs(userBasic.notificationPreferences)
-      });
-      
-      // Create default settings based on existing data (until migration is complete)
-      const notificationPrefs = parseNotificationPrefs(userBasic.notificationPreferences);
-      const settings: UserSettings = {
-        profile: {
-          fullName: userBasic.fullName,
-          email: userBasic.email,
-          phone: userBasic.phone,
-          specialty: userBasic.specialty,
-        },
-        notifications: {
-          ...notificationPrefs
-        },
-        security: {
-          twoFactorEnabled: false,
-          requiredReauthForSensitive: true
-        }
-      };
-      
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: settings
-      });
-      
-      return parsedUser as User;
+      console.error('Error in getUserByEmail:', error);
+      return undefined;
     }
   }
 
