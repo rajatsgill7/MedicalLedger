@@ -42,7 +42,8 @@ import {
   Smartphone, 
   Mail,
   ShieldAlert,
-  KeyRound
+  KeyRound,
+  Info
 } from "lucide-react";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
