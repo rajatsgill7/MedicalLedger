@@ -66,294 +66,793 @@ export class DatabaseStorage implements IStorage {
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    if (!user) return undefined;
-    
-    // Parse notification preferences using the helper function and attach as non-DB field
-    const parsedUser = { ...user };
-    
-    // Set the legacy notification preferences property for backward compatibility
-    Object.defineProperty(parsedUser, 'notificationPreferences', {
-      enumerable: true,
-      value: parseNotificationPrefs(user.notificationPreferences)
-    });
-    
-    // Set the combined settings property if available
-    if (user.userSettings) {
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: parseUserSettings(user.userSettings?.toString())
-      });
-    } else {
-      // Create default settings based on existing data
-      const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
-      const settings: UserSettings = {
-        profile: {
-          fullName: user.fullName,
-          email: user.email,
-          phone: user.phone,
-          specialty: user.specialty,
-        },
-        notifications: {
-          ...notificationPrefs
-        },
-        security: {
-          twoFactorEnabled: false,
-          requiredReauthForSensitive: true
-        }
-      };
-      
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: settings
-      });
-    }
-    
-    return parsedUser as User;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, username));
-    
-    if (!user) return undefined;
-    
-    // Parse notification preferences using the helper function and attach as non-DB field
-    const parsedUser = { ...user };
-    
-    // Set the legacy notification preferences property for backward compatibility
-    Object.defineProperty(parsedUser, 'notificationPreferences', {
-      enumerable: true,
-      value: parseNotificationPrefs(user.notificationPreferences)
-    });
-    
-    // Set the combined settings property if available
-    if (user.userSettings) {
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: parseUserSettings(user.userSettings?.toString())
-      });
-    } else {
-      // Create default settings based on existing data
-      const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
-      const settings: UserSettings = {
-        profile: {
-          fullName: user.fullName,
-          email: user.email,
-          phone: user.phone,
-          specialty: user.specialty,
-        },
-        notifications: {
-          ...notificationPrefs
-        },
-        security: {
-          twoFactorEnabled: false,
-          requiredReauthForSensitive: true
-        }
-      };
-      
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: settings
-      });
-    }
-    
-    return parsedUser as User;
-  }
-  
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email));
-    
-    if (!user) return undefined;
-    
-    // Parse notification preferences using the helper function and attach as non-DB field
-    const parsedUser = { ...user };
-    
-    // Set the legacy notification preferences property for backward compatibility
-    Object.defineProperty(parsedUser, 'notificationPreferences', {
-      enumerable: true,
-      value: parseNotificationPrefs(user.notificationPreferences)
-    });
-    
-    // Set the combined settings property if available
-    if (user.userSettings) {
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: parseUserSettings(user.userSettings?.toString())
-      });
-    } else {
-      // Create default settings based on existing data
-      const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
-      const settings: UserSettings = {
-        profile: {
-          fullName: user.fullName,
-          email: user.email,
-          phone: user.phone,
-          specialty: user.specialty,
-        },
-        notifications: {
-          ...notificationPrefs
-        },
-        security: {
-          twoFactorEnabled: false,
-          requiredReauthForSensitive: true
-        }
-      };
-      
-      Object.defineProperty(parsedUser, 'settings', {
-        enumerable: true,
-        value: settings
-      });
-    }
-    
-    return parsedUser as User;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    // Ensure role is always set
-    const role = insertUser.role || "patient";
-    // Ensure specialty is set to null if not provided
-    const specialty = insertUser.specialty === undefined ? null : insertUser.specialty;
-    
-    // Set default notification preferences using the helper
-    const defaultPrefs = notificationPrefsToString({
-      emailNotifications: true,
-      smsNotifications: false,
-      accessRequestAlerts: true,
-      securityAlerts: true
-    });
-    
-    const [user] = await db
-      .insert(users)
-      .values({
-        ...insertUser,
-        role,
-        specialty,
-        notificationPreferences: defaultPrefs,
-        createdAt: new Date()
-      })
-      .returning();
-      
-    // Parse notification preferences using the helper function and attach as non-DB field
-    const parsedUser = { ...user };
-    
-    // Set the property after spreading to avoid TypeScript issues
-    Object.defineProperty(parsedUser, 'notificationPreferences', {
-      enumerable: true,
-      value: parseNotificationPrefs(user.notificationPreferences)
-    });
-    
-    return parsedUser as User;
-  }
-  
-  async updateUser(id: number, update: Partial<User>): Promise<User | undefined> {
-    // Handle notificationPreferences separately to convert to JSON string
-    const { notificationPreferences: updatedPrefs, ...otherUpdates } = update;
-    
-    // Get the current user first
-    const [currentUser] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, id));
-      
-    if (!currentUser) return undefined;
-
-    // Prepare the database update
-    let dbUpdate: any = { ...otherUpdates };
-    
-    // If notification preferences are being updated
-    if (updatedPrefs) {
-      // Parse current preferences or use defaults
-      const existingPrefs = parseNotificationPrefs(currentUser.notificationPreferences);
-      
-      // Merge new preferences with existing ones (safely cast to object types first)
-      const mergedPrefs = {
-        ...(existingPrefs as object),
-        ...(updatedPrefs as object)
-      } as NotificationPreferences;
-      
-      console.log('Merged notification preferences:', mergedPrefs);
-      
-      // Serialize to JSON string for storage using helper function
-      dbUpdate.notificationPreferences = notificationPrefsToString(mergedPrefs);
-    }
-    
-    // If there are database fields to update, perform the update
-    if (Object.keys(dbUpdate).length > 0) {
-      const [updatedUser] = await db
-        .update(users)
-        .set(dbUpdate)
-        .where(eq(users.id, id))
-        .returning();
-      
-      if (!updatedUser) return undefined;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      if (!user) return undefined;
       
       // Parse notification preferences using the helper function and attach as non-DB field
-      const parsedUser = { ...updatedUser };
-      
-      // Set the property after spreading to avoid TypeScript issues
-      Object.defineProperty(parsedUser, 'notificationPreferences', {
-        enumerable: true,
-        value: parseNotificationPrefs(updatedUser.notificationPreferences)
-      });
-      
-      return parsedUser as User;
-    }
-    
-    // If no updates were made, return the current user with parsed preferences
-    const parsedUser = { ...currentUser };
-    
-    // Set the property after spreading to avoid TypeScript issues
-    Object.defineProperty(parsedUser, 'notificationPreferences', {
-      enumerable: true,
-      value: parseNotificationPrefs(currentUser.notificationPreferences)
-    });
-    
-    return parsedUser as User;
-  }
-
-  async getAllUsers(): Promise<User[]> {
-    const userList = await db.select().from(users);
-    
-    // Process each user to have proper notification preferences
-    return userList.map(user => {
-      // Create a new object with all user properties
       const parsedUser = { ...user };
       
-      // Set the notification preferences property after spreading to avoid TypeScript issues
+      // Set the legacy notification preferences property for backward compatibility
       Object.defineProperty(parsedUser, 'notificationPreferences', {
         enumerable: true,
         value: parseNotificationPrefs(user.notificationPreferences)
       });
       
+      // Create default settings based on existing data (until migration is complete)
+      const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
+      const settings: UserSettings = {
+        profile: {
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          specialty: user.specialty,
+        },
+        notifications: {
+          ...notificationPrefs
+        },
+        security: {
+          twoFactorEnabled: false,
+          requiredReauthForSensitive: true
+        }
+      };
+      
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: settings
+      });
+      
       return parsedUser as User;
-    });
+    } catch (error) {
+      // Handle error if the user_settings column doesn't exist yet
+      console.error('Error in getUser. Database may need migration:', error);
+      
+      // Fallback to just getting user without user_settings
+      const [userBasic] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          password: users.password,
+          fullName: users.fullName,
+          email: users.email,
+          role: users.role,
+          specialty: users.specialty,
+          phone: users.phone,
+          createdAt: users.createdAt,
+          notificationPreferences: users.notificationPreferences
+        })
+        .from(users)
+        .where(eq(users.id, id));
+        
+      if (!userBasic) return undefined;
+      
+      // Parse notification preferences using the helper function and attach as non-DB field
+      const parsedUser = { ...userBasic };
+      
+      // Set the legacy notification preferences property for backward compatibility
+      Object.defineProperty(parsedUser, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(userBasic.notificationPreferences)
+      });
+      
+      // Create default settings based on existing data (until migration is complete)
+      const notificationPrefs = parseNotificationPrefs(userBasic.notificationPreferences);
+      const settings: UserSettings = {
+        profile: {
+          fullName: userBasic.fullName,
+          email: userBasic.email,
+          phone: userBasic.phone,
+          specialty: userBasic.specialty,
+        },
+        notifications: {
+          ...notificationPrefs
+        },
+        security: {
+          twoFactorEnabled: false,
+          requiredReauthForSensitive: true
+        }
+      };
+      
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: settings
+      });
+      
+      return parsedUser as User;
+    }
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, username));
+      
+      if (!user) return undefined;
+      
+      // Parse notification preferences using the helper function and attach as non-DB field
+      const parsedUser = { ...user };
+      
+      // Set the legacy notification preferences property for backward compatibility
+      Object.defineProperty(parsedUser, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(user.notificationPreferences)
+      });
+      
+      // Create default settings based on existing data (until migration is complete)
+      const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
+      const settings: UserSettings = {
+        profile: {
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          specialty: user.specialty,
+        },
+        notifications: {
+          ...notificationPrefs
+        },
+        security: {
+          twoFactorEnabled: false,
+          requiredReauthForSensitive: true
+        }
+      };
+      
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: settings
+      });
+      
+      return parsedUser as User;
+    } catch (error) {
+      // Handle error if the user_settings column doesn't exist yet
+      console.error('Error in getUserByUsername. Database may need migration:', error);
+      
+      // Fallback to just getting user without user_settings
+      const [userBasic] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          password: users.password,
+          fullName: users.fullName,
+          email: users.email,
+          role: users.role,
+          specialty: users.specialty,
+          phone: users.phone,
+          createdAt: users.createdAt,
+          notificationPreferences: users.notificationPreferences
+        })
+        .from(users)
+        .where(eq(users.username, username));
+        
+      if (!userBasic) return undefined;
+      
+      // Parse notification preferences using the helper function and attach as non-DB field
+      const parsedUser = { ...userBasic };
+      
+      // Set the notification preferences property for backward compatibility
+      Object.defineProperty(parsedUser, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(userBasic.notificationPreferences)
+      });
+      
+      // Create default settings based on existing data (until migration is complete)
+      const notificationPrefs = parseNotificationPrefs(userBasic.notificationPreferences);
+      const settings: UserSettings = {
+        profile: {
+          fullName: userBasic.fullName,
+          email: userBasic.email,
+          phone: userBasic.phone,
+          specialty: userBasic.specialty,
+        },
+        notifications: {
+          ...notificationPrefs
+        },
+        security: {
+          twoFactorEnabled: false,
+          requiredReauthForSensitive: true
+        }
+      };
+      
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: settings
+      });
+      
+      return parsedUser as User;
+    }
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+      
+      if (!user) return undefined;
+      
+      // Parse notification preferences using the helper function and attach as non-DB field
+      const parsedUser = { ...user };
+      
+      // Set the legacy notification preferences property for backward compatibility
+      Object.defineProperty(parsedUser, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(user.notificationPreferences)
+      });
+      
+      // Create default settings based on existing data (until migration is complete)
+      const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
+      const settings: UserSettings = {
+        profile: {
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          specialty: user.specialty,
+        },
+        notifications: {
+          ...notificationPrefs
+        },
+        security: {
+          twoFactorEnabled: false,
+          requiredReauthForSensitive: true
+        }
+      };
+      
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: settings
+      });
+      
+      return parsedUser as User;
+    } catch (error) {
+      // Handle error if the user_settings column doesn't exist yet
+      console.error('Error in getUserByEmail. Database may need migration:', error);
+      
+      // Fallback to just getting user without user_settings
+      const [userBasic] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          password: users.password,
+          fullName: users.fullName,
+          email: users.email,
+          role: users.role,
+          specialty: users.specialty,
+          phone: users.phone,
+          createdAt: users.createdAt,
+          notificationPreferences: users.notificationPreferences
+        })
+        .from(users)
+        .where(eq(users.email, email));
+        
+      if (!userBasic) return undefined;
+      
+      // Parse notification preferences using the helper function and attach as non-DB field
+      const parsedUser = { ...userBasic };
+      
+      // Set the notification preferences property for backward compatibility
+      Object.defineProperty(parsedUser, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(userBasic.notificationPreferences)
+      });
+      
+      // Create default settings based on existing data (until migration is complete)
+      const notificationPrefs = parseNotificationPrefs(userBasic.notificationPreferences);
+      const settings: UserSettings = {
+        profile: {
+          fullName: userBasic.fullName,
+          email: userBasic.email,
+          phone: userBasic.phone,
+          specialty: userBasic.specialty,
+        },
+        notifications: {
+          ...notificationPrefs
+        },
+        security: {
+          twoFactorEnabled: false,
+          requiredReauthForSensitive: true
+        }
+      };
+      
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: settings
+      });
+      
+      return parsedUser as User;
+    }
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    try {
+      // Ensure role is always set
+      const role = insertUser.role || "patient";
+      // Ensure specialty is set to null if not provided
+      const specialty = insertUser.specialty === undefined ? null : insertUser.specialty;
+      
+      // Set default notification preferences using the helper
+      const defaultPrefs = notificationPrefsToString({
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      });
+      
+      // Create default user settings
+      const defaultSettings: UserSettings = {
+        profile: {
+          fullName: insertUser.fullName,
+          email: insertUser.email,
+          phone: insertUser.phone || null,
+          specialty: specialty,
+        },
+        notifications: {
+          emailNotifications: true,
+          smsNotifications: false,
+          accessRequestAlerts: true,
+          securityAlerts: true,
+          newRecordAlerts: true,
+          systemUpdates: true,
+          marketingEmails: false,
+          communicationPreference: 'email',
+          quietHours: {
+            enabled: false
+          }
+        },
+        security: {
+          twoFactorEnabled: false,
+          requiredReauthForSensitive: true,
+          recoveryCodesGenerated: false
+        }
+      };
+      
+      // Convert user settings to string for storage
+      const userSettingsStr = userSettingsToString(defaultSettings);
+      
+      try {
+        // Try inserting with userSettings column
+        const [user] = await db
+          .insert(users)
+          .values({
+            ...insertUser,
+            role,
+            specialty,
+            notificationPreferences: defaultPrefs,
+            userSettings: userSettingsStr,
+            createdAt: new Date()
+          })
+          .returning();
+          
+        // Parse notification preferences using the helper function and attach as non-DB field
+        const parsedUser = { ...user };
+        
+        // Set the property after spreading to avoid TypeScript issues
+        Object.defineProperty(parsedUser, 'notificationPreferences', {
+          enumerable: true,
+          value: parseNotificationPrefs(user.notificationPreferences)
+        });
+        
+        // Set the settings property
+        Object.defineProperty(parsedUser, 'settings', {
+          enumerable: true,
+          value: defaultSettings
+        });
+        
+        return parsedUser as User;
+      } catch (error) {
+        // If error occurs (likely due to missing userSettings column), try without it
+        console.error('Error in createUser with userSettings, trying without it:', error);
+        
+        const [user] = await db
+          .insert(users)
+          .values({
+            ...insertUser,
+            role,
+            specialty,
+            notificationPreferences: defaultPrefs,
+            createdAt: new Date()
+          })
+          .returning();
+          
+        // Parse notification preferences using the helper function and attach as non-DB field
+        const parsedUser = { ...user };
+        
+        // Set the property after spreading to avoid TypeScript issues
+        Object.defineProperty(parsedUser, 'notificationPreferences', {
+          enumerable: true,
+          value: parseNotificationPrefs(user.notificationPreferences)
+        });
+        
+        // Set the settings property even though it's not in DB
+        Object.defineProperty(parsedUser, 'settings', {
+          enumerable: true,
+          value: defaultSettings
+        });
+        
+        return parsedUser as User;
+      }
+    } catch (error) {
+      console.error('Error in createUser:', error);
+      throw error;
+    }
+  }
+  
+  async updateUser(id: number, update: Partial<User>): Promise<User | undefined> {
+    try {
+      // Handle notificationPreferences and settings separately
+      const { 
+        notificationPreferences: updatedPrefs, 
+        settings: updatedSettings, 
+        ...otherUpdates 
+      } = update;
+      
+      // Get the current user first
+      const [currentUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, id));
+        
+      if (!currentUser) return undefined;
+  
+      // Prepare the database update
+      let dbUpdate: any = { ...otherUpdates };
+      
+      // If notification preferences are being updated
+      if (updatedPrefs) {
+        // Parse current preferences or use defaults
+        const existingPrefs = parseNotificationPrefs(currentUser.notificationPreferences);
+        
+        // Merge new preferences with existing ones (safely cast to object types first)
+        const mergedPrefs = {
+          ...(existingPrefs as object),
+          ...(updatedPrefs as object)
+        } as NotificationPreferences;
+        
+        console.log('Merged notification preferences:', mergedPrefs);
+        
+        // Serialize to JSON string for storage using helper function
+        dbUpdate.notificationPreferences = notificationPrefsToString(mergedPrefs);
+      }
+      
+      // If user settings are being updated, try to update in database
+      let currentSettings: UserSettings = {
+        profile: {
+          fullName: currentUser.fullName,
+          email: currentUser.email,
+          phone: currentUser.phone,
+          specialty: currentUser.specialty,
+        },
+        notifications: parseNotificationPrefs(currentUser.notificationPreferences),
+        security: {
+          twoFactorEnabled: false,
+          requiredReauthForSensitive: true
+        }
+      };
+      
+      // Try to update user settings
+      if (updatedSettings) {
+        // Merge the updated settings with current settings
+        const mergedSettings = {
+          ...currentSettings,
+          ...updatedSettings
+        };
+        
+        // Serialize settings for storage
+        const userSettingsStr = userSettingsToString(mergedSettings);
+        
+        try {
+          // Try to add userSettings to database update
+          dbUpdate.userSettings = userSettingsStr;
+        } catch (error) {
+          console.error('Error adding userSettings to update, column may not exist:', error);
+          // Continue without adding userSettings to the update
+        }
+        
+        // Store the merged settings to return after update
+        currentSettings = mergedSettings;
+      }
+      
+      // If there are database fields to update, perform the update
+      if (Object.keys(dbUpdate).length > 0) {
+        try {
+          // Try update with all fields
+          const [updatedUser] = await db
+            .update(users)
+            .set(dbUpdate)
+            .where(eq(users.id, id))
+            .returning();
+          
+          if (!updatedUser) return undefined;
+          
+          // Parse notification preferences using the helper function and attach as non-DB field
+          const parsedUser = { ...updatedUser };
+          
+          // Set the property after spreading to avoid TypeScript issues
+          Object.defineProperty(parsedUser, 'notificationPreferences', {
+            enumerable: true,
+            value: parseNotificationPrefs(updatedUser.notificationPreferences)
+          });
+          
+          // Set settings property
+          Object.defineProperty(parsedUser, 'settings', {
+            enumerable: true,
+            value: currentSettings
+          });
+          
+          return parsedUser as User;
+        } catch (error) {
+          console.error('Error updating user with userSettings, trying without it:', error);
+          
+          // Remove userSettings from update if it exists
+          if ('userSettings' in dbUpdate) {
+            delete dbUpdate.userSettings;
+          }
+          
+          // If there are still fields to update, try again without userSettings
+          if (Object.keys(dbUpdate).length > 0) {
+            const [updatedUser] = await db
+              .update(users)
+              .set(dbUpdate)
+              .where(eq(users.id, id))
+              .returning();
+            
+            if (!updatedUser) return undefined;
+            
+            // Parse notification preferences using the helper function and attach as non-DB field
+            const parsedUser = { ...updatedUser };
+            
+            // Set the property after spreading to avoid TypeScript issues
+            Object.defineProperty(parsedUser, 'notificationPreferences', {
+              enumerable: true,
+              value: parseNotificationPrefs(updatedUser.notificationPreferences)
+            });
+            
+            // Set settings property even though it's not in DB
+            Object.defineProperty(parsedUser, 'settings', {
+              enumerable: true,
+              value: currentSettings
+            });
+            
+            return parsedUser as User;
+          }
+        }
+      }
+      
+      // If no updates were made, return the current user with parsed preferences
+      const parsedUser = { ...currentUser };
+      
+      // Set the property after spreading to avoid TypeScript issues
+      Object.defineProperty(parsedUser, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(currentUser.notificationPreferences)
+      });
+      
+      // Set settings property
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: currentSettings
+      });
+      
+      return parsedUser as User;
+    } catch (error) {
+      console.error('Error in updateUser:', error);
+      throw error;
+    }
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    try {
+      const userList = await db.select().from(users);
+      
+      // Process each user to have proper notification preferences
+      return userList.map(user => {
+        // Create a new object with all user properties
+        const parsedUser = { ...user };
+        
+        // Parse notification preferences
+        const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
+        
+        // Set the notification preferences property after spreading to avoid TypeScript issues
+        Object.defineProperty(parsedUser, 'notificationPreferences', {
+          enumerable: true,
+          value: notificationPrefs
+        });
+        
+        // Create default settings based on existing data
+        const settings: UserSettings = {
+          profile: {
+            fullName: user.fullName,
+            email: user.email,
+            phone: user.phone,
+            specialty: user.specialty,
+          },
+          notifications: notificationPrefs,
+          security: {
+            twoFactorEnabled: false,
+            requiredReauthForSensitive: true
+          }
+        };
+        
+        // Set the settings property
+        Object.defineProperty(parsedUser, 'settings', {
+          enumerable: true,
+          value: settings
+        });
+        
+        return parsedUser as User;
+      });
+    } catch (error) {
+      console.error('Error in getAllUsers:', error);
+      
+      // Try selecting just basic user fields if userSettings column doesn't exist
+      try {
+        const userList = await db
+          .select({
+            id: users.id,
+            username: users.username,
+            password: users.password,
+            fullName: users.fullName,
+            email: users.email,
+            role: users.role,
+            specialty: users.specialty,
+            phone: users.phone,
+            createdAt: users.createdAt,
+            notificationPreferences: users.notificationPreferences
+          })
+          .from(users);
+        
+        // Process each user to have proper notification preferences
+        return userList.map(user => {
+          // Create a new object with all user properties
+          const parsedUser = { ...user };
+          
+          // Parse notification preferences
+          const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
+          
+          // Set the notification preferences property after spreading to avoid TypeScript issues
+          Object.defineProperty(parsedUser, 'notificationPreferences', {
+            enumerable: true,
+            value: notificationPrefs
+          });
+          
+          // Create default settings based on existing data
+          const settings: UserSettings = {
+            profile: {
+              fullName: user.fullName,
+              email: user.email,
+              phone: user.phone,
+              specialty: user.specialty,
+            },
+            notifications: notificationPrefs,
+            security: {
+              twoFactorEnabled: false,
+              requiredReauthForSensitive: true
+            }
+          };
+          
+          // Set the settings property
+          Object.defineProperty(parsedUser, 'settings', {
+            enumerable: true,
+            value: settings
+          });
+          
+          return parsedUser as User;
+        });
+      } catch (innerError) {
+        console.error('Error in getAllUsers fallback:', innerError);
+        throw innerError;
+      }
+    }
   }
   
   async getDoctors(): Promise<User[]> {
-    const doctors = await db
-      .select()
-      .from(users)
-      .where(eq(users.role, "doctor"));
-      
-    // Process each doctor to have proper notification preferences
-    return doctors.map(doctor => {
-      // Create a new object with all doctor properties
-      const parsedDoctor = { ...doctor };
-      
-      // Set the notification preferences property after spreading to avoid TypeScript issues
-      Object.defineProperty(parsedDoctor, 'notificationPreferences', {
-        enumerable: true,
-        value: parseNotificationPrefs(doctor.notificationPreferences)
+    try {
+      const doctors = await db
+        .select()
+        .from(users)
+        .where(eq(users.role, "doctor"));
+        
+      // Process each doctor to have proper notification preferences
+      return doctors.map(doctor => {
+        // Create a new object with all doctor properties
+        const parsedDoctor = { ...doctor };
+        
+        // Parse notification preferences
+        const notificationPrefs = parseNotificationPrefs(doctor.notificationPreferences);
+        
+        // Set the notification preferences property after spreading to avoid TypeScript issues
+        Object.defineProperty(parsedDoctor, 'notificationPreferences', {
+          enumerable: true,
+          value: notificationPrefs
+        });
+        
+        // Create default settings based on existing data
+        const settings: UserSettings = {
+          profile: {
+            fullName: doctor.fullName,
+            email: doctor.email,
+            phone: doctor.phone,
+            specialty: doctor.specialty,
+          },
+          notifications: notificationPrefs,
+          security: {
+            twoFactorEnabled: false,
+            requiredReauthForSensitive: true
+          }
+        };
+        
+        // Set the settings property
+        Object.defineProperty(parsedDoctor, 'settings', {
+          enumerable: true,
+          value: settings
+        });
+        
+        return parsedDoctor as User;
       });
+    } catch (error) {
+      console.error('Error in getDoctors:', error);
       
-      return parsedDoctor as User;
-    });
+      // Try selecting just basic user fields if userSettings column doesn't exist
+      try {
+        const doctors = await db
+          .select({
+            id: users.id,
+            username: users.username,
+            password: users.password,
+            fullName: users.fullName,
+            email: users.email,
+            role: users.role,
+            specialty: users.specialty,
+            phone: users.phone,
+            createdAt: users.createdAt,
+            notificationPreferences: users.notificationPreferences
+          })
+          .from(users)
+          .where(eq(users.role, "doctor"));
+        
+        // Process each doctor to have proper notification preferences
+        return doctors.map(doctor => {
+          // Create a new object with all doctor properties
+          const parsedDoctor = { ...doctor };
+          
+          // Parse notification preferences
+          const notificationPrefs = parseNotificationPrefs(doctor.notificationPreferences);
+          
+          // Set the notification preferences property after spreading to avoid TypeScript issues
+          Object.defineProperty(parsedDoctor, 'notificationPreferences', {
+            enumerable: true,
+            value: notificationPrefs
+          });
+          
+          // Create default settings based on existing data
+          const settings: UserSettings = {
+            profile: {
+              fullName: doctor.fullName,
+              email: doctor.email,
+              phone: doctor.phone,
+              specialty: doctor.specialty,
+            },
+            notifications: notificationPrefs,
+            security: {
+              twoFactorEnabled: false,
+              requiredReauthForSensitive: true
+            }
+          };
+          
+          // Set the settings property
+          Object.defineProperty(parsedDoctor, 'settings', {
+            enumerable: true,
+            value: settings
+          });
+          
+          return parsedDoctor as User;
+        });
+      } catch (innerError) {
+        console.error('Error in getDoctors fallback:', innerError);
+        throw innerError;
+      }
+    }
   }
   
   // Record operations
