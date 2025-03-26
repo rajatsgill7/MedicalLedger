@@ -477,6 +477,7 @@ export default function SettingsPage() {
                   <Form {...advancedSecurityForm}>
                     <form 
                       id="advanced-security-form"
+                      onSubmit={advancedSecurityForm.handleSubmit(onAdvancedSecuritySubmit)}
                       className="space-y-4"
                     >
                       <FormField
@@ -688,14 +689,26 @@ export default function SettingsPage() {
                   </Form>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button 
-                  type="submit" 
-                  form="security-form"
-                  disabled={changePasswordMutation.isPending}
-                >
-                  {changePasswordMutation.isPending ? "Updating..." : "Update Password"}
-                </Button>
+              <CardFooter className="flex justify-between">
+                <div>
+                  <Button 
+                    type="submit" 
+                    form="advanced-security-form"
+                    disabled={updateAdvancedSecurityMutation.isPending}
+                    variant="outline"
+                  >
+                    {updateAdvancedSecurityMutation.isPending ? "Saving..." : "Save Security Settings"}
+                  </Button>
+                </div>
+                <div>
+                  <Button 
+                    type="submit" 
+                    form="security-form"
+                    disabled={changePasswordMutation.isPending}
+                  >
+                    {changePasswordMutation.isPending ? "Updating..." : "Update Password"}
+                  </Button>
+                </div>
               </CardFooter>
             </Card>
           </TabsContent>

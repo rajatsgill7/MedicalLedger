@@ -8,7 +8,10 @@ import {
   insertAccessRequestSchema, 
   UserRole,
   notificationPrefsToString,
-  parseNotificationPrefs
+  parseNotificationPrefs,
+  userSettingsToString,
+  parseUserSettings,
+  SecuritySettings
 } from "@shared/schema";
 
 // Type guard to ensure req.user is defined
