@@ -704,10 +704,24 @@ Verified: ${record.verified ? "Yes" : "No"}
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Update user with validated notification preferences
-      // Use the imported helper function to properly serialize the preferences
+      // Get current settings if they exist
+      let userSettings = currentUser.settings || {};
+      
+      // Update notifications in settings
+      const updatedSettings = {
+        ...userSettings,
+        notifications: {
+          ...(userSettings.notifications || {}),
+          emailNotifications: validatedData.emailNotifications,
+          smsNotifications: validatedData.smsNotifications,
+          accessRequestAlerts: validatedData.accessRequestAlerts,
+          securityAlerts: validatedData.securityAlerts
+        }
+      };
+      
+      // Update user with the new settings
       const updatedUser = await storage.updateUser(userId, { 
-        notificationPreferences: notificationPrefsToString(validatedData)
+        settings: updatedSettings
       });
       
       if (!updatedUser) {
@@ -722,13 +736,11 @@ Verified: ${record.verified ? "Yes" : "No"}
         ipAddress: req.ip
       });
 
-      // Parse the saved preferences before returning to client
-      const preferences = parseNotificationPrefs(updatedUser.notificationPreferences);
-      console.log('Updated notification preferences:', preferences);
+      console.log('Updated notification settings:', updatedUser.settings?.notifications);
 
       res.json({
         message: "Notification preferences updated",
-        preferences
+        notifications: updatedUser.settings?.notifications
       });
     } catch (error) {
       if (error instanceof Error && error.name === "ZodError") {

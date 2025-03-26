@@ -215,10 +215,13 @@ export default function SettingsPage() {
       });
       // Update user data with new preferences
       const currentUser = queryClient.getQueryData<any>(['/api/user']);
-      if (currentUser && response.preferences) {
+      if (currentUser && response.notifications) {
         queryClient.setQueryData(['/api/user'], {
           ...currentUser,
-          notificationPreferences: response.preferences
+          settings: {
+            ...currentUser.settings,
+            notifications: response.notifications
+          }
         });
       }
       // Also invalidate to ensure future fetches are fresh
