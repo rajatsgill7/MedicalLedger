@@ -584,6 +584,37 @@ export default function SettingsPage() {
                         )}
                       />
 
+
+
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center">
+                          <KeyRound className="h-4 w-4 mr-2" />
+                          <span className="text-sm font-medium">Recovery Codes</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Generate backup codes to access your account if you lose your two-factor device
+                        </p>
+                        <div className="flex">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowRecoveryCodesDialog(true)}
+                            className="flex items-center gap-1"
+                          >
+                            <KeyRound className="h-3 w-3" />
+                            <span>{user?.settings?.security?.recoveryCodesGenerated 
+                              ? "Generate New Recovery Codes" 
+                              : "Generate Recovery Codes"}
+                            </span>
+                          </Button>
+                        </div>
+                        {user?.settings?.security?.recoveryCodesGenerated && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Recovery codes have been generated. Generate new ones to replace existing codes.
+                          </p>
+                        )}
+                      </div>
+
                       <FormField
                         control={advancedSecurityForm.control}
                         name="receiveLoginAlerts"
@@ -632,52 +663,7 @@ export default function SettingsPage() {
                         )}
                       />
                       
-                      <FormField
-                        control={advancedSecurityForm.control}
-                        name="recoveryCodesGenerated"
-                        render={({ field }) => (
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <div className="flex items-center">
-                                <KeyRound className="h-4 w-4 mr-2" />
-                                <span className="text-sm font-medium">Recovery Codes</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                {field.value ? 
-                                  "Recovery codes have been generated for account recovery" :
-                                  "Generate recovery codes to regain access if you lose your 2FA device"
-                                }
-                              </p>
-                            </div>
-                            
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              type="button"
-                              onClick={() => {
-                                // Generate six random codes and show them in a dialog
-                                const codes = Array(6).fill(0).map(() => 
-                                  Math.random().toString(36).substring(2, 6) + "-" + 
-                                  Math.random().toString(36).substring(2, 6) + "-" +
-                                  Math.random().toString(36).substring(2, 6)
-                                );
-                                setGeneratedCodes(codes);
-                                setRecoveryCodesDialogOpen(true);
-                                advancedSecurityForm.setValue("recoveryCodesGenerated", true);
-                                
-                                // Also update the database
-                                updateAdvancedSecurityMutation.mutate({
-                                  ...advancedSecurityForm.getValues(),
-                                  recoveryCodesGenerated: true
-                                });
-                              }}
-                              disabled={field.value}
-                            >
-                              {field.value ? "Generated" : "Generate Codes"}
-                            </Button>
-                          </div>
-                        )}
-                      />
+
                       
                       {/* Emergency Access Override (only for admins and doctors) */}
                       {(isAdmin || isDoctor) && (
