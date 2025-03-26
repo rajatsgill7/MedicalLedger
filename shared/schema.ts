@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, date, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, date, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -11,22 +11,118 @@ export const UserRole = {
 
 export type UserRoleType = typeof UserRole[keyof typeof UserRole];
 
+// Profile settings type
+export type ProfileSettings = {
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  specialty?: string | null;
+  address?: string | null;
+  dateOfBirth?: string | null;
+  profilePictureUrl?: string | null;
+  bio?: string | null;
+  lastUpdated?: string | null;
+};
+
+// Security settings type
+export type SecuritySettings = {
+  twoFactorEnabled?: boolean;
+  twoFactorMethod?: 'sms' | 'email' | 'app' | null;
+  lastPasswordChange?: string | null;
+  passwordStrength?: 'weak' | 'medium' | 'strong' | null;
+  requiredReauthForSensitive?: boolean;
+  ipRestrictions?: string[] | null;
+  sessionTimeout?: number | null; // in minutes
+  securityQuestions?: Array<{question: string, answer: string}> | null;
+  recoveryCodesGenerated?: boolean;
+};
+
 // Notification preferences type
 export type NotificationPreferences = {
   emailNotifications?: boolean;
   smsNotifications?: boolean;
   accessRequestAlerts?: boolean;
   securityAlerts?: boolean;
+  newRecordAlerts?: boolean;
+  systemUpdates?: boolean;
+  marketingEmails?: boolean;
+  communicationPreference?: 'email' | 'sms' | 'both' | 'none';
+  quietHours?: {
+    enabled: boolean;
+    start?: string;
+    end?: string;
+    timezone?: string;
+  };
 };
 
-// Function to convert notification preferences to a JSON string
-export function notificationPrefsToString(prefs: NotificationPreferences): string {
+// Combine all user settings
+export type UserSettings = {
+  profile?: ProfileSettings;
+  security?: SecuritySettings;
+  notifications?: NotificationPreferences;
+};
+
+// Function to convert user settings to a JSON string
+export function userSettingsToString(settings: UserSettings): string {
+  return JSON.stringify(settings);
+}
+
+// Function to parse user settings from a string
+export function parseUserSettings(settingsStr: string | null): UserSettings {
+  const defaultSettings: UserSettings = {
+    profile: {
+      fullName: '',
+      email: '',
+    },
+    security: {
+      twoFactorEnabled: false,
+      requiredReauthForSensitive: true,
+      recoveryCodesGenerated: false
+    },
+    notifications: {
+      emailNotifications: true,
+      smsNotifications: false,
+      accessRequestAlerts: true,
+      securityAlerts: true,
+      newRecordAlerts: true,
+      systemUpdates: true,
+      marketingEmails: false,
+      communicationPreference: 'email',
+      quietHours: {
+        enabled: false
+      }
+    }
+  };
+  
+  if (!settingsStr) return defaultSettings;
+  
+  try {
+    return {
+      ...defaultSettings,
+      ...JSON.parse(settingsStr)
+    };
+  } catch (e) {
+    console.error('Error parsing user settings:', e);
+    return defaultSettings;
+  }
+}
+
+// For backward compatibility
+export type NotificationPreferencesLegacy = {
+  emailNotifications?: boolean;
+  smsNotifications?: boolean;
+  accessRequestAlerts?: boolean;
+  securityAlerts?: boolean;
+};
+
+// Function to convert notification preferences to a JSON string (legacy)
+export function notificationPrefsToString(prefs: NotificationPreferencesLegacy): string {
   return JSON.stringify(prefs);
 }
 
-// Function to parse notification preferences from a string
-export function parseNotificationPrefs(prefsStr: string | null): NotificationPreferences {
-  const defaultPrefs: NotificationPreferences = {
+// Function to parse notification preferences from a string (legacy)
+export function parseNotificationPrefs(prefsStr: string | null): NotificationPreferencesLegacy {
+  const defaultPrefs: NotificationPreferencesLegacy = {
     emailNotifications: true,
     smsNotifications: false,
     accessRequestAlerts: true,
@@ -57,7 +153,8 @@ export const users = pgTable("users", {
   specialty: text("specialty"), // For doctors
   phone: text("phone"), // Phone number
   createdAt: timestamp("created_at").defaultNow(),
-  notificationPreferences: text("notification_preferences"), // Stored as JSON string
+  notificationPreferences: text("notification_preferences"), // Legacy - for backward compatibility
+  userSettings: jsonb("user_settings"), // All settings in a unified JSON structure
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -69,6 +166,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   specialty: true,
   phone: true,
   notificationPreferences: true,
+  userSettings: true,
 });
 
 // Records table
@@ -142,6 +240,7 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).pick({
 // Defining types for TypeScript
 export type User = typeof users.$inferSelect & {
   notificationPreferences?: NotificationPreferences;
+  settings?: UserSettings;
 };
 export type InsertUser = z.infer<typeof insertUserSchema>;
 

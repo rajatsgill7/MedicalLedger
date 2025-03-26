@@ -3,7 +3,9 @@ import {
   records, Record, InsertRecord,
   accessRequests, AccessRequest, InsertAccessRequest,
   auditLogs, AuditLog, InsertAuditLog, UserRole,
-  NotificationPreferences, parseNotificationPrefs, notificationPrefsToString
+  NotificationPreferences, parseNotificationPrefs, notificationPrefsToString,
+  UserSettings, parseUserSettings, userSettingsToString, 
+  NotificationPreferencesLegacy
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -70,11 +72,42 @@ export class DatabaseStorage implements IStorage {
     // Parse notification preferences using the helper function and attach as non-DB field
     const parsedUser = { ...user };
     
-    // Set the property after spreading to avoid TypeScript issues
+    // Set the legacy notification preferences property for backward compatibility
     Object.defineProperty(parsedUser, 'notificationPreferences', {
       enumerable: true,
       value: parseNotificationPrefs(user.notificationPreferences)
     });
+    
+    // Set the combined settings property if available
+    if (user.userSettings) {
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: parseUserSettings(user.userSettings?.toString())
+      });
+    } else {
+      // Create default settings based on existing data
+      const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
+      const settings: UserSettings = {
+        profile: {
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          specialty: user.specialty,
+        },
+        notifications: {
+          ...notificationPrefs
+        },
+        security: {
+          twoFactorEnabled: false,
+          requiredReauthForSensitive: true
+        }
+      };
+      
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: settings
+      });
+    }
     
     return parsedUser as User;
   }
@@ -90,11 +123,42 @@ export class DatabaseStorage implements IStorage {
     // Parse notification preferences using the helper function and attach as non-DB field
     const parsedUser = { ...user };
     
-    // Set the property after spreading to avoid TypeScript issues
+    // Set the legacy notification preferences property for backward compatibility
     Object.defineProperty(parsedUser, 'notificationPreferences', {
       enumerable: true,
       value: parseNotificationPrefs(user.notificationPreferences)
     });
+    
+    // Set the combined settings property if available
+    if (user.userSettings) {
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: parseUserSettings(user.userSettings?.toString())
+      });
+    } else {
+      // Create default settings based on existing data
+      const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
+      const settings: UserSettings = {
+        profile: {
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          specialty: user.specialty,
+        },
+        notifications: {
+          ...notificationPrefs
+        },
+        security: {
+          twoFactorEnabled: false,
+          requiredReauthForSensitive: true
+        }
+      };
+      
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: settings
+      });
+    }
     
     return parsedUser as User;
   }
@@ -110,11 +174,42 @@ export class DatabaseStorage implements IStorage {
     // Parse notification preferences using the helper function and attach as non-DB field
     const parsedUser = { ...user };
     
-    // Set the property after spreading to avoid TypeScript issues
+    // Set the legacy notification preferences property for backward compatibility
     Object.defineProperty(parsedUser, 'notificationPreferences', {
       enumerable: true,
       value: parseNotificationPrefs(user.notificationPreferences)
     });
+    
+    // Set the combined settings property if available
+    if (user.userSettings) {
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: parseUserSettings(user.userSettings?.toString())
+      });
+    } else {
+      // Create default settings based on existing data
+      const notificationPrefs = parseNotificationPrefs(user.notificationPreferences);
+      const settings: UserSettings = {
+        profile: {
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          specialty: user.specialty,
+        },
+        notifications: {
+          ...notificationPrefs
+        },
+        security: {
+          twoFactorEnabled: false,
+          requiredReauthForSensitive: true
+        }
+      };
+      
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: settings
+      });
+    }
     
     return parsedUser as User;
   }
