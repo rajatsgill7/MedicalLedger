@@ -40,10 +40,22 @@ import {
   Shield, 
   AlertCircle, 
   Smartphone, 
-  Mail 
+  Mail,
+  ShieldAlert,
+  KeyRound
 } from "lucide-react";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Form schemas
 const profileFormSchema = z.object({
@@ -84,6 +96,9 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { isPatient, isDoctor, isAdmin } = useRole();
   const [activeTab, setActiveTab] = useState("profile");
+  const [emergencyDialogOpen, setEmergencyDialogOpen] = useState(false);
+  const [recoveryCodesDialogOpen, setRecoveryCodesDialogOpen] = useState(false);
+  const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
 
   // Profile form
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
