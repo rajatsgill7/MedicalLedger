@@ -236,7 +236,7 @@ export default function SettingsPage() {
   // Advanced security settings mutation
   const updateAdvancedSecurityMutation = useMutation({
     mutationFn: async (data: z.infer<typeof advancedSecurityFormSchema>) => {
-      const res = await apiRequest("PATCH", `/api/users/${user?.id}/security-settings`, data);
+      const res = await apiRequest("PATCH", `/api/users/${user?.id}/security`, data);
       return await res.json();
     },
     onSuccess: (response) => {
@@ -252,7 +252,7 @@ export default function SettingsPage() {
           ...currentUser,
           settings: {
             ...currentUser.settings,
-            security: response.securitySettings
+            security: response.security
           }
         });
       }
