@@ -282,11 +282,62 @@ export class DatabaseStorage implements IStorage {
           value: finalSettings
         });
         
+        // Add virtual properties derived from settings
+        Object.defineProperty(parsedUser, 'fullName', {
+          enumerable: true,
+          value: finalSettings?.profile?.fullName
+        });
+        
+        Object.defineProperty(parsedUser, 'email', {
+          enumerable: true,
+          value: finalSettings?.profile?.email
+        });
+        
+        Object.defineProperty(parsedUser, 'specialty', {
+          enumerable: true,
+          value: finalSettings?.profile?.specialty
+        });
+        
+        Object.defineProperty(parsedUser, 'phone', {
+          enumerable: true,
+          value: finalSettings?.profile?.phone
+        });
+        
         return parsedUser as User;
       }
       
-      // If no updates were made, return the current user
-      return currentUser as User;
+      // If no updates were made, return the current user with virtual properties
+      const parsedUser = { ...currentUser };
+      
+      // Add virtual properties derived from settings
+      const settings = parseUserSettings(currentUser.userSettings);
+      
+      Object.defineProperty(parsedUser, 'settings', {
+        enumerable: true,
+        value: settings
+      });
+      
+      Object.defineProperty(parsedUser, 'fullName', {
+        enumerable: true,
+        value: settings?.profile?.fullName
+      });
+      
+      Object.defineProperty(parsedUser, 'email', {
+        enumerable: true,
+        value: settings?.profile?.email
+      });
+      
+      Object.defineProperty(parsedUser, 'specialty', {
+        enumerable: true,
+        value: settings?.profile?.specialty
+      });
+      
+      Object.defineProperty(parsedUser, 'phone', {
+        enumerable: true,
+        value: settings?.profile?.phone
+      });
+      
+      return parsedUser as User;
     } catch (error) {
       console.error('Error in updateUser:', error);
       throw error;
@@ -706,24 +757,33 @@ export class MemStorage implements IStorage {
     Object.assign(user, otherUpdates);
     
     // Handle settings update
+    let finalSettings = parseUserSettings(user.userSettings);
+    
     if (updatedSettings) {
-      // Parse current settings
-      const currentSettings = parseUserSettings(user.userSettings);
-      
       // Merge settings
-      const mergedSettings = {
-        ...currentSettings,
+      finalSettings = {
+        ...finalSettings,
         ...updatedSettings
       };
       
       // Update userSettings string
-      user.userSettings = userSettingsToString(mergedSettings);
+      user.userSettings = userSettingsToString(finalSettings);
       
       // Update virtual settings property
-      user.settings = mergedSettings;
+      user.settings = finalSettings;
     }
     
-    return user;
+    // Create a copy of the user with all virtual properties
+    const enhancedUser = {
+      ...user,
+      settings: finalSettings,
+      fullName: finalSettings?.profile?.fullName,
+      email: finalSettings?.profile?.email,
+      specialty: finalSettings?.profile?.specialty,
+      phone: finalSettings?.profile?.phone
+    };
+    
+    return enhancedUser as User;
   }
 
   async getAllUsers(): Promise<User[]> {
