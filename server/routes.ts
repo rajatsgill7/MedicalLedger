@@ -574,8 +574,23 @@ Verified: ${record.verified ? "Yes" : "No"}
       console.log('Profile update request:', req.body);
       console.log('Validated data:', validatedData);
       
+      // Transform flat profile data into settings structure
+      const transformedData = {
+        settings: {
+          profile: {
+            ...(validatedData.fullName ? { fullName: validatedData.fullName } : {}),
+            ...(validatedData.email ? { email: validatedData.email } : {}),
+            ...(validatedData.specialty ? { specialty: validatedData.specialty } : {}),
+            ...(validatedData.phone ? { phone: validatedData.phone } : {}),
+            lastUpdated: new Date().toISOString(),
+          }
+        }
+      };
+      
+      console.log('Transformed data for database:', transformedData);
+      
       // Update user
-      const updatedUser = await storage.updateUser(userId, validatedData);
+      const updatedUser = await storage.updateUser(userId, transformedData);
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -807,12 +822,9 @@ Verified: ${record.verified ? "Yes" : "No"}
         }
       };
       
-      // Convert settings to JSON string
-      const userSettingsStr = userSettingsToString(updatedSettings);
-      
-      // Update the user
+      // Update the user with the new settings structure
       const updatedUser = await storage.updateUser(userId, {
-        userSettings: userSettingsStr
+        settings: updatedSettings
       });
       
       if (!updatedUser) {
