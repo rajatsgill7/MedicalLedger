@@ -680,6 +680,7 @@ Verified: ${record.verified ? "Yes" : "No"}
       });
   
       const validatedData = notificationSchema.parse(req.body);
+      console.log('Notification update received:', validatedData);
       
       // Get the current user to retrieve existing notification preferences
       const currentUser = await storage.getUser(userId);
@@ -687,49 +688,10 @@ Verified: ${record.verified ? "Yes" : "No"}
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Define default preferences
-      const defaultPrefs = {
-        emailNotifications: true,
-        smsNotifications: false,
-        accessRequestAlerts: true,
-        securityAlerts: true
-      };
-      
-      // Parse existing preferences if available
-      let existingPrefs = defaultPrefs;
-      if (currentUser.notificationPreferences) {
-        try {
-          // Check if notificationPreferences is already an object
-          if (typeof currentUser.notificationPreferences === 'object' && 
-              !Array.isArray(currentUser.notificationPreferences) &&
-              currentUser.notificationPreferences !== null) {
-            existingPrefs = {
-              ...defaultPrefs,
-              ...currentUser.notificationPreferences
-            };
-          } else if (typeof currentUser.notificationPreferences === 'string') {
-            // Parse JSON string
-            existingPrefs = {
-              ...defaultPrefs,
-              ...JSON.parse(currentUser.notificationPreferences)
-            };
-          } else {
-            console.log('Current user in session:', currentUser);
-          }
-        } catch (e) {
-          console.error('Error parsing notification preferences', e);
-        }
-      }
-      
-      // Merge the validated data with existing preferences
-      const mergedPrefs = {
-        ...existingPrefs,
-        ...validatedData
-      };
-      
-      // Convert the merged preferences to a JSON string before saving
+      // Update user with validated notification preferences
+      // Use the imported helper function to properly serialize the preferences
       const updatedUser = await storage.updateUser(userId, { 
-        notificationPreferences: JSON.stringify(mergedPrefs)
+        notificationPreferences: validatedData
       });
       
       if (!updatedUser) {
@@ -743,6 +705,8 @@ Verified: ${record.verified ? "Yes" : "No"}
         details: `User updated notification preferences`,
         ipAddress: req.ip
       });
+
+      console.log('Updated notification preferences:', updatedUser.notificationPreferences);
 
       res.json({
         message: "Notification preferences updated",

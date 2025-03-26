@@ -67,25 +67,8 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     if (!user) return undefined;
     
-    // Default notification preferences
-    let notificationPreferences: NotificationPreferences = {
-      emailNotifications: true,
-      smsNotifications: false,
-      accessRequestAlerts: true,
-      securityAlerts: true
-    };
-    
-    // Try to parse notification preferences from JSON if they exist
-    if (user.notificationPreferences) {
-      try {
-        notificationPreferences = {
-          ...notificationPreferences,
-          ...JSON.parse(user.notificationPreferences)
-        };
-      } catch (e) {
-        console.error('Error parsing notification preferences:', e);
-      }
-    }
+    // Parse notification preferences using the helper function
+    const notificationPreferences = parseNotificationPrefs(user.notificationPreferences);
     
     return {
       ...user,
@@ -101,57 +84,8 @@ export class DatabaseStorage implements IStorage {
     
     if (!user) return undefined;
     
-    // Default notification preferences
-    let notificationPreferences: NotificationPreferences = {
-      emailNotifications: true,
-      smsNotifications: false,
-      accessRequestAlerts: true,
-      securityAlerts: true
-    };
-    
-    // Try to parse notification preferences from JSON if they exist
-    if (user.notificationPreferences) {
-      try {
-        if (typeof user.notificationPreferences === 'string') {
-          // It's a JSON string, parse it
-          notificationPreferences = {
-            ...notificationPreferences,
-            ...JSON.parse(user.notificationPreferences)
-          };
-        } else if (typeof user.notificationPreferences === 'object' && 
-                  !Array.isArray(user.notificationPreferences) && 
-                  user.notificationPreferences !== null) {
-          // It's already an object
-          if ('emailNotifications' in user.notificationPreferences || 
-              'smsNotifications' in user.notificationPreferences ||
-              'accessRequestAlerts' in user.notificationPreferences ||
-              'securityAlerts' in user.notificationPreferences) {
-            // If it has the expected properties, use it directly
-            notificationPreferences = {
-              ...notificationPreferences,
-              ...user.notificationPreferences as any
-            };
-          } else if (Object.keys(user.notificationPreferences).length > 0 && 
-                    Object.keys(user.notificationPreferences).some(key => !isNaN(Number(key)))) {
-            // It appears to be a character-by-character array, rebuild the string
-            const jsonStr = Object.values(user.notificationPreferences).join('');
-            // Check if it looks like a valid JSON string
-            if (jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
-              try {
-                notificationPreferences = {
-                  ...notificationPreferences,
-                  ...JSON.parse(jsonStr)
-                };
-              } catch (e) {
-                console.error('Error parsing rebuilt JSON string:', e);
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Error parsing notification preferences:', e);
-      }
-    }
+    // Parse notification preferences using the helper function
+    const notificationPreferences = parseNotificationPrefs(user.notificationPreferences);
     
     return {
       ...user,
@@ -167,57 +101,8 @@ export class DatabaseStorage implements IStorage {
     
     if (!user) return undefined;
     
-    // Default notification preferences
-    let notificationPreferences: NotificationPreferences = {
-      emailNotifications: true,
-      smsNotifications: false,
-      accessRequestAlerts: true,
-      securityAlerts: true
-    };
-    
-    // Try to parse notification preferences from JSON if they exist
-    if (user.notificationPreferences) {
-      try {
-        if (typeof user.notificationPreferences === 'string') {
-          // It's a JSON string, parse it
-          notificationPreferences = {
-            ...notificationPreferences,
-            ...JSON.parse(user.notificationPreferences)
-          };
-        } else if (typeof user.notificationPreferences === 'object' && 
-                  !Array.isArray(user.notificationPreferences) && 
-                  user.notificationPreferences !== null) {
-          // It's already an object
-          if ('emailNotifications' in user.notificationPreferences || 
-              'smsNotifications' in user.notificationPreferences ||
-              'accessRequestAlerts' in user.notificationPreferences ||
-              'securityAlerts' in user.notificationPreferences) {
-            // If it has the expected properties, use it directly
-            notificationPreferences = {
-              ...notificationPreferences,
-              ...user.notificationPreferences as any
-            };
-          } else if (Object.keys(user.notificationPreferences).length > 0 && 
-                    Object.keys(user.notificationPreferences).some(key => !isNaN(Number(key)))) {
-            // It appears to be a character-by-character array, rebuild the string
-            const jsonStr = Object.values(user.notificationPreferences).join('');
-            // Check if it looks like a valid JSON string
-            if (jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
-              try {
-                notificationPreferences = {
-                  ...notificationPreferences,
-                  ...JSON.parse(jsonStr)
-                };
-              } catch (e) {
-                console.error('Error parsing rebuilt JSON string:', e);
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Error parsing notification preferences:', e);
-      }
-    }
+    // Parse notification preferences using the helper function
+    const notificationPreferences = parseNotificationPrefs(user.notificationPreferences);
     
     return {
       ...user,
@@ -231,8 +116,8 @@ export class DatabaseStorage implements IStorage {
     // Ensure specialty is set to null if not provided
     const specialty = insertUser.specialty === undefined ? null : insertUser.specialty;
     
-    // Set default notification preferences
-    const defaultPrefs = JSON.stringify({
+    // Set default notification preferences using the helper
+    const defaultPrefs = notificationPrefsToString({
       emailNotifications: true,
       smsNotifications: false,
       accessRequestAlerts: true,
@@ -250,15 +135,8 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
       
-    // Parse the notification preferences from the stored JSON
-    let notificationPreferences = {};
-    if (user.notificationPreferences) {
-      try {
-        notificationPreferences = JSON.parse(user.notificationPreferences);
-      } catch (e) {
-        console.error('Error parsing notification preferences', e);
-      }
-    }
+    // Parse notification preferences using helper function
+    const notificationPreferences = parseNotificationPrefs(user.notificationPreferences);
     
     // Return user with parsed notification preferences
     return {
@@ -269,7 +147,7 @@ export class DatabaseStorage implements IStorage {
   
   async updateUser(id: number, update: Partial<User>): Promise<User | undefined> {
     // Handle notificationPreferences separately to convert to JSON string
-    const { notificationPreferences, ...otherUpdates } = update;
+    const { notificationPreferences: updatedPrefs, ...otherUpdates } = update;
     
     // Get the current user first
     const [currentUser] = await db
@@ -283,32 +161,20 @@ export class DatabaseStorage implements IStorage {
     let dbUpdate: any = { ...otherUpdates };
     
     // If notification preferences are being updated
-    if (notificationPreferences) {
-      // Get existing preferences or use defaults
-      let existingPrefs: NotificationPreferences = { 
-        emailNotifications: true,
-        smsNotifications: false,
-        accessRequestAlerts: true,
-        securityAlerts: true
-      };
-      
-      try {
-        // Try to parse existing preferences from JSON string if present
-        if (currentUser.notificationPreferences) {
-          existingPrefs = JSON.parse(currentUser.notificationPreferences);
-        }
-      } catch (e) {
-        console.error('Error parsing existing notification preferences', e);
-      }
+    if (updatedPrefs) {
+      // Parse current preferences or use defaults
+      const existingPrefs = parseNotificationPrefs(currentUser.notificationPreferences);
       
       // Merge new preferences with existing ones
       const mergedPrefs = {
         ...existingPrefs,
-        ...notificationPreferences
+        ...updatedPrefs
       };
       
-      // Serialize to JSON string for storage
-      dbUpdate.notificationPreferences = JSON.stringify(mergedPrefs);
+      console.log('Merged notification preferences:', mergedPrefs);
+      
+      // Serialize to JSON string for storage using helper function
+      dbUpdate.notificationPreferences = notificationPrefsToString(mergedPrefs);
     }
     
     // If there are database fields to update, perform the update
@@ -321,63 +187,30 @@ export class DatabaseStorage implements IStorage {
       
       if (!updatedUser) return undefined;
       
-      // Convert JSON string back to object for the returned user
-      let returnedPrefs: NotificationPreferences | undefined = undefined;
-      
-      if (updatedUser.notificationPreferences) {
-        try {
-          returnedPrefs = JSON.parse(updatedUser.notificationPreferences);
-        } catch (e) {
-          console.error('Error parsing updated notification preferences', e);
-        }
-      }
+      // Parse notification preferences using helper function
+      const notificationPreferences = parseNotificationPrefs(updatedUser.notificationPreferences);
       
       return {
         ...updatedUser,
-        notificationPreferences: returnedPrefs
+        notificationPreferences
       };
     }
     
     // If no updates were made, return the current user
-    let returnedPrefs: NotificationPreferences | undefined = undefined;
-    if (currentUser.notificationPreferences) {
-      try {
-        returnedPrefs = JSON.parse(currentUser.notificationPreferences);
-      } catch (e) {
-        console.error('Error parsing current notification preferences', e);
-      }
-    }
+    const userPrefs = parseNotificationPrefs(currentUser.notificationPreferences);
     
     return {
       ...currentUser,
-      notificationPreferences: returnedPrefs
+      notificationPreferences: userPrefs
     };
   }
 
   async getAllUsers(): Promise<User[]> {
     const userList = await db.select().from(users);
     
-    // Parse notification preferences from JSON for each user
+    // Parse notification preferences using helper function for each user
     return userList.map(user => {
-      // Default notification preferences
-      let notificationPreferences = {
-        emailNotifications: true,
-        smsNotifications: false,
-        accessRequestAlerts: true,
-        securityAlerts: true
-      };
-      
-      // Try to parse notification preferences from JSON if they exist
-      if (user.notificationPreferences) {
-        try {
-          notificationPreferences = {
-            ...notificationPreferences,
-            ...JSON.parse(user.notificationPreferences)
-          };
-        } catch (e) {
-          console.error('Error parsing notification preferences:', e);
-        }
-      }
+      const notificationPreferences = parseNotificationPrefs(user.notificationPreferences);
       
       return {
         ...user,
@@ -392,27 +225,9 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.role, UserRole.DOCTOR));
       
-    // Parse notification preferences from JSON for each doctor
+    // Parse notification preferences using helper function for each doctor
     return doctors.map(doctor => {
-      // Default notification preferences
-      let notificationPreferences = {
-        emailNotifications: true,
-        smsNotifications: false,
-        accessRequestAlerts: true,
-        securityAlerts: true
-      };
-      
-      // Try to parse notification preferences from JSON if they exist
-      if (doctor.notificationPreferences) {
-        try {
-          notificationPreferences = {
-            ...notificationPreferences,
-            ...JSON.parse(doctor.notificationPreferences)
-          };
-        } catch (e) {
-          console.error('Error parsing notification preferences:', e);
-        }
-      }
+      const notificationPreferences = parseNotificationPrefs(doctor.notificationPreferences);
       
       return {
         ...doctor,
@@ -505,27 +320,9 @@ export class DatabaseStorage implements IStorage {
         ).then(allDoctors => allDoctors.filter(doctor => doctorIds.includes(doctor.id)))
       : [];
     
-    // Process notification preferences for each doctor
+    // Process notification preferences for each doctor using helper function
     const doctorsWithPrefs = doctors.map(doctor => {
-      // Default notification preferences
-      let notificationPreferences = {
-        emailNotifications: true,
-        smsNotifications: false,
-        accessRequestAlerts: true,
-        securityAlerts: true
-      };
-      
-      // Try to parse notification preferences from JSON if they exist
-      if (doctor.notificationPreferences) {
-        try {
-          notificationPreferences = {
-            ...notificationPreferences,
-            ...JSON.parse(doctor.notificationPreferences)
-          };
-        } catch (e) {
-          console.error('Error parsing notification preferences:', e);
-        }
-      }
+      const notificationPreferences = parseNotificationPrefs(doctor.notificationPreferences);
       
       return {
         ...doctor,
@@ -564,27 +361,9 @@ export class DatabaseStorage implements IStorage {
         ).then(allPatients => allPatients.filter(patient => patientIds.includes(patient.id)))
       : [];
     
-    // Process notification preferences for each patient
+    // Process notification preferences for each patient using helper function
     const patientsWithPrefs = patients.map(patient => {
-      // Default notification preferences
-      let notificationPreferences = {
-        emailNotifications: true,
-        smsNotifications: false,
-        accessRequestAlerts: true,
-        securityAlerts: true
-      };
-      
-      // Try to parse notification preferences from JSON if they exist
-      if (patient.notificationPreferences) {
-        try {
-          notificationPreferences = {
-            ...notificationPreferences,
-            ...JSON.parse(patient.notificationPreferences)
-          };
-        } catch (e) {
-          console.error('Error parsing notification preferences:', e);
-        }
-      }
+      const notificationPreferences = parseNotificationPrefs(patient.notificationPreferences);
       
       return {
         ...patient,
