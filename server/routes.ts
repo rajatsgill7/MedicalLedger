@@ -71,7 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // or an admin who can access any user data
       if (
         userId !== user.id && 
-        !(user.role === UserRole.DOCTOR && await storage.hasAccess(user.id, userId)) &&
+        !((user.role as string) === 'doctor' && await storage.hasAccess(user.id, userId)) &&
         user.role !== 'admin'
       ) {
         return res.status(403).json({ message: "Access denied" });
@@ -102,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/patients', isAuthenticated, hasRole([UserRole.DOCTOR, UserRole.ADMIN]), async (req, res) => {
     // Get all users with role "patient"
     const users = await storage.getAllUsers();
-    const patients = users.filter(user => user.role === UserRole.PATIENT);
+    const patients = users.filter(user => (user.role as string) === 'patient');
     
     // Don't send passwords to client
     const sanitizedPatients = patients.map(({ password, ...patient }) => patient);
