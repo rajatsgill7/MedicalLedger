@@ -3,7 +3,7 @@ import {
   records, Record, InsertRecord,
   accessRequests, AccessRequest, InsertAccessRequest,
   auditLogs, AuditLog, InsertAuditLog, UserRole,
-  NotificationPreferences
+  NotificationPreferences, parseNotificationPrefs, notificationPrefsToString
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
