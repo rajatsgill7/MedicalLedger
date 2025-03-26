@@ -334,15 +334,11 @@ export class DatabaseStorage implements IStorage {
     // Enrich with doctor info
     const doctorIds = Array.from(new Set(requests.map(req => req.doctorId)));
     
+    // Get all doctors with matching IDs
     const doctors = doctorIds.length > 0 
-      ? await db.select().from(users).where(
-          and(
-            eq(users.role, "doctor"),
-            // Fetch all doctors and filter them in memory since some versions of 
-            // Drizzle don't have a good 'in' operator implementation
-            eq(users.role, "doctor")
-          )
-        ).then(allDoctors => allDoctors.filter(doctor => doctorIds.includes(doctor.id)))
+      ? await db.select().from(users)
+          .where(eq(users.role, "doctor"))
+          .then(allDoctors => allDoctors.filter(doctor => doctorIds.includes(doctor.id)))
       : [];
     
     // Process notification preferences for each doctor using helper function
@@ -381,13 +377,9 @@ export class DatabaseStorage implements IStorage {
     const patientIds = Array.from(new Set(requests.map(req => req.patientId)));
     
     const patients = patientIds.length > 0 
-      ? await db.select().from(users).where(
-          and(
-            eq(users.role, "patient"),
-            // Fetch all patients and filter them in memory
-            eq(users.role, "patient")
-          )
-        ).then(allPatients => allPatients.filter(patient => patientIds.includes(patient.id)))
+      ? await db.select().from(users)
+          .where(eq(users.role, "patient"))
+          .then(allPatients => allPatients.filter(patient => patientIds.includes(patient.id)))
       : [];
     
     // Process notification preferences for each patient using helper function
