@@ -46,16 +46,8 @@ export default function PatientRecords() {
     enabled: !!user?.id,
   });
   
-  // Filter for pending requests only
-  const pendingRequests = accessRequests?.filter(req => req.status === "pending") || [];
-  
-  // For debugging
-  useEffect(() => {
-    if (accessRequests) {
-      console.log("Access requests:", accessRequests);
-      console.log("Pending requests:", pendingRequests);
-    }
-  }, [accessRequests, pendingRequests]);
+  // Filter for pending requests only - use case-insensitive comparison for reliability
+  const pendingRequests = accessRequests?.filter(req => req.status.toLowerCase() === "pending") || [];
 
   // Handler for viewing a record
   const handleViewRecord = (id: number) => {
