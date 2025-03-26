@@ -99,6 +99,34 @@ export default function SettingsPage() {
   const [emergencyDialogOpen, setEmergencyDialogOpen] = useState(false);
   const [recoveryCodesDialogOpen, setRecoveryCodesDialogOpen] = useState(false);
   const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
+  
+  // Set up recovery codes generation mutation
+  const generateRecoveryCodesMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      const res = await apiRequest("POST", `/api/users/${user.id}/generate-recovery-codes`);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      setGeneratedCodes(data.recoveryCodes);
+      setRecoveryCodesDialogOpen(true);
+      
+      // Refresh user data to update recoveryCodesGenerated flag
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      
+      toast({
+        title: "Recovery codes generated",
+        description: "Store these codes in a secure location. They will only be shown once."
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to generate recovery codes",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Profile form
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
@@ -598,13 +626,18 @@ export default function SettingsPage() {
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => setRecoveryCodesDialogOpen(true)}
+                            onClick={() => generateRecoveryCodesMutation.mutate()}
                             className="flex items-center gap-1"
+                            disabled={generateRecoveryCodesMutation.isPending}
                           >
                             <KeyRound className="h-3 w-3" />
-                            <span>{user?.settings?.security?.recoveryCodesGenerated 
-                              ? "Generate New Recovery Codes" 
-                              : "Generate Recovery Codes"}
+                            <span>
+                              {generateRecoveryCodesMutation.isPending 
+                                ? "Generating..." 
+                                : user?.settings?.security?.recoveryCodesGenerated 
+                                  ? "Generate New Recovery Codes" 
+                                  : "Generate Recovery Codes"
+                              }
                             </span>
                           </Button>
                         </div>
