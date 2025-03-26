@@ -6,7 +6,9 @@ import { z } from "zod";
 import { 
   insertRecordSchema, 
   insertAccessRequestSchema, 
-  UserRole 
+  UserRole,
+  notificationPrefsToString,
+  parseNotificationPrefs
 } from "@shared/schema";
 
 // Type guard to ensure req.user is defined

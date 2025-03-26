@@ -67,13 +67,16 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     if (!user) return undefined;
     
-    // Parse notification preferences using the helper function
-    const notificationPreferences = parseNotificationPrefs(user.notificationPreferences);
+    // Parse notification preferences using the helper function and attach as non-DB field
+    const parsedUser = { ...user };
     
-    return {
-      ...user,
-      notificationPreferences
-    };
+    // Set the property after spreading to avoid TypeScript issues
+    Object.defineProperty(parsedUser, 'notificationPreferences', {
+      enumerable: true,
+      value: parseNotificationPrefs(user.notificationPreferences)
+    });
+    
+    return parsedUser as User;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -84,13 +87,16 @@ export class DatabaseStorage implements IStorage {
     
     if (!user) return undefined;
     
-    // Parse notification preferences using the helper function
-    const notificationPreferences = parseNotificationPrefs(user.notificationPreferences);
+    // Parse notification preferences using the helper function and attach as non-DB field
+    const parsedUser = { ...user };
     
-    return {
-      ...user,
-      notificationPreferences
-    };
+    // Set the property after spreading to avoid TypeScript issues
+    Object.defineProperty(parsedUser, 'notificationPreferences', {
+      enumerable: true,
+      value: parseNotificationPrefs(user.notificationPreferences)
+    });
+    
+    return parsedUser as User;
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -101,13 +107,16 @@ export class DatabaseStorage implements IStorage {
     
     if (!user) return undefined;
     
-    // Parse notification preferences using the helper function
-    const notificationPreferences = parseNotificationPrefs(user.notificationPreferences);
+    // Parse notification preferences using the helper function and attach as non-DB field
+    const parsedUser = { ...user };
     
-    return {
-      ...user,
-      notificationPreferences
-    };
+    // Set the property after spreading to avoid TypeScript issues
+    Object.defineProperty(parsedUser, 'notificationPreferences', {
+      enumerable: true,
+      value: parseNotificationPrefs(user.notificationPreferences)
+    });
+    
+    return parsedUser as User;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -135,14 +144,16 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
       
-    // Parse notification preferences using helper function
-    const notificationPreferences = parseNotificationPrefs(user.notificationPreferences);
+    // Parse notification preferences using the helper function and attach as non-DB field
+    const parsedUser = { ...user };
     
-    // Return user with parsed notification preferences
-    return {
-      ...user,
-      notificationPreferences
-    };
+    // Set the property after spreading to avoid TypeScript issues
+    Object.defineProperty(parsedUser, 'notificationPreferences', {
+      enumerable: true,
+      value: parseNotificationPrefs(user.notificationPreferences)
+    });
+    
+    return parsedUser as User;
   }
   
   async updateUser(id: number, update: Partial<User>): Promise<User | undefined> {
@@ -165,11 +176,11 @@ export class DatabaseStorage implements IStorage {
       // Parse current preferences or use defaults
       const existingPrefs = parseNotificationPrefs(currentUser.notificationPreferences);
       
-      // Merge new preferences with existing ones
+      // Merge new preferences with existing ones (safely cast to object types first)
       const mergedPrefs = {
-        ...existingPrefs,
-        ...updatedPrefs
-      };
+        ...(existingPrefs as object),
+        ...(updatedPrefs as object)
+      } as NotificationPreferences;
       
       console.log('Merged notification preferences:', mergedPrefs);
       
@@ -187,35 +198,45 @@ export class DatabaseStorage implements IStorage {
       
       if (!updatedUser) return undefined;
       
-      // Parse notification preferences using helper function
-      const notificationPreferences = parseNotificationPrefs(updatedUser.notificationPreferences);
+      // Parse notification preferences using the helper function and attach as non-DB field
+      const parsedUser = { ...updatedUser };
       
-      return {
-        ...updatedUser,
-        notificationPreferences
-      };
+      // Set the property after spreading to avoid TypeScript issues
+      Object.defineProperty(parsedUser, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(updatedUser.notificationPreferences)
+      });
+      
+      return parsedUser as User;
     }
     
-    // If no updates were made, return the current user
-    const userPrefs = parseNotificationPrefs(currentUser.notificationPreferences);
+    // If no updates were made, return the current user with parsed preferences
+    const parsedUser = { ...currentUser };
     
-    return {
-      ...currentUser,
-      notificationPreferences: userPrefs
-    };
+    // Set the property after spreading to avoid TypeScript issues
+    Object.defineProperty(parsedUser, 'notificationPreferences', {
+      enumerable: true,
+      value: parseNotificationPrefs(currentUser.notificationPreferences)
+    });
+    
+    return parsedUser as User;
   }
 
   async getAllUsers(): Promise<User[]> {
     const userList = await db.select().from(users);
     
-    // Parse notification preferences using helper function for each user
+    // Process each user to have proper notification preferences
     return userList.map(user => {
-      const notificationPreferences = parseNotificationPrefs(user.notificationPreferences);
+      // Create a new object with all user properties
+      const parsedUser = { ...user };
       
-      return {
-        ...user,
-        notificationPreferences
-      };
+      // Set the notification preferences property after spreading to avoid TypeScript issues
+      Object.defineProperty(parsedUser, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(user.notificationPreferences)
+      });
+      
+      return parsedUser as User;
     });
   }
   
@@ -225,14 +246,18 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.role, UserRole.DOCTOR));
       
-    // Parse notification preferences using helper function for each doctor
+    // Process each doctor to have proper notification preferences
     return doctors.map(doctor => {
-      const notificationPreferences = parseNotificationPrefs(doctor.notificationPreferences);
+      // Create a new object with all doctor properties
+      const parsedDoctor = { ...doctor };
       
-      return {
-        ...doctor,
-        notificationPreferences
-      };
+      // Set the notification preferences property after spreading to avoid TypeScript issues
+      Object.defineProperty(parsedDoctor, 'notificationPreferences', {
+        enumerable: true,
+        value: parseNotificationPrefs(doctor.notificationPreferences)
+      });
+      
+      return parsedDoctor as User;
     });
   }
   
