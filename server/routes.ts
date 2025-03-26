@@ -256,10 +256,12 @@ Verified: ${record.verified ? "Yes" : "No"}
     // Get records for each patient the doctor has access to
     for (const request of activeRequests) {
       const patientRecords = await storage.getRecordsByPatientId(request.patientId);
-      // For each record, add doctor access info
+      // For each record, add doctor access info as additional non-DB properties
       patientRecords.forEach(record => {
-        record.accessGranted = true;
-        record.accessExpiryDate = request.expiryDate;
+        // Use type assertion to add the properties that don't exist in the record schema
+        // but are needed for the frontend to display access status
+        (record as any).accessGranted = true;
+        (record as any).accessExpiryDate = request.expiryDate;
       });
       allRecords.push(...patientRecords);
     }
@@ -679,10 +681,23 @@ Verified: ${record.verified ? "Yes" : "No"}
       let existingPrefs = defaultPrefs;
       if (currentUser.notificationPreferences) {
         try {
-          existingPrefs = {
-            ...defaultPrefs,
-            ...JSON.parse(currentUser.notificationPreferences as string)
-          };
+          // Check if notificationPreferences is already an object
+          if (typeof currentUser.notificationPreferences === 'object' && 
+              !Array.isArray(currentUser.notificationPreferences) &&
+              currentUser.notificationPreferences !== null) {
+            existingPrefs = {
+              ...defaultPrefs,
+              ...currentUser.notificationPreferences
+            };
+          } else if (typeof currentUser.notificationPreferences === 'string') {
+            // Parse JSON string
+            existingPrefs = {
+              ...defaultPrefs,
+              ...JSON.parse(currentUser.notificationPreferences)
+            };
+          } else {
+            console.log('Current user in session:', currentUser);
+          }
         } catch (e) {
           console.error('Error parsing notification preferences', e);
         }
