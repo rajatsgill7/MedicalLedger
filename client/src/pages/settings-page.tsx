@@ -598,7 +598,7 @@ export default function SettingsPage() {
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => setShowRecoveryCodesDialog(true)}
+                            onClick={() => setRecoveryCodesDialogOpen(true)}
                             className="flex items-center gap-1"
                           >
                             <KeyRound className="h-3 w-3" />
