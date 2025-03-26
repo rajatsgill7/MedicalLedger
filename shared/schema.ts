@@ -116,40 +116,7 @@ export function parseUserSettings(settingsInput: string | object | null): UserSe
   }
 }
 
-// For backward compatibility
-export type NotificationPreferencesLegacy = {
-  emailNotifications?: boolean;
-  smsNotifications?: boolean;
-  accessRequestAlerts?: boolean;
-  securityAlerts?: boolean;
-};
-
-// Function to convert notification preferences to a JSON string (legacy)
-export function notificationPrefsToString(prefs: NotificationPreferencesLegacy): string {
-  return JSON.stringify(prefs);
-}
-
-// Function to parse notification preferences from a string (legacy)
-export function parseNotificationPrefs(prefsStr: string | null): NotificationPreferencesLegacy {
-  const defaultPrefs: NotificationPreferencesLegacy = {
-    emailNotifications: true,
-    smsNotifications: false,
-    accessRequestAlerts: true,
-    securityAlerts: true
-  };
-  
-  if (!prefsStr) return defaultPrefs;
-  
-  try {
-    return {
-      ...defaultPrefs,
-      ...JSON.parse(prefsStr)
-    };
-  } catch (e) {
-    console.error('Error parsing notification preferences:', e);
-    return defaultPrefs;
-  }
-}
+// Removed legacy notification preference handling
 
 // Users table
 export const users = pgTable("users", {
