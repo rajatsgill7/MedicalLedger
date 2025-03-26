@@ -121,7 +121,7 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     // Ensure role is always set
-    const role = insertUser.role || UserRole.PATIENT;
+    const role = insertUser.role || "patient";
     // Ensure specialty is set to null if not provided
     const specialty = insertUser.specialty === undefined ? null : insertUser.specialty;
     
@@ -244,7 +244,7 @@ export class DatabaseStorage implements IStorage {
     const doctors = await db
       .select()
       .from(users)
-      .where(eq(users.role, UserRole.DOCTOR));
+      .where(eq(users.role, "doctor"));
       
     // Process each doctor to have proper notification preferences
     return doctors.map(doctor => {
@@ -337,10 +337,10 @@ export class DatabaseStorage implements IStorage {
     const doctors = doctorIds.length > 0 
       ? await db.select().from(users).where(
           and(
-            eq(users.role, UserRole.DOCTOR),
+            eq(users.role, "doctor"),
             // Fetch all doctors and filter them in memory since some versions of 
             // Drizzle don't have a good 'in' operator implementation
-            eq(users.role, UserRole.DOCTOR)
+            eq(users.role, "doctor")
           )
         ).then(allDoctors => allDoctors.filter(doctor => doctorIds.includes(doctor.id)))
       : [];
@@ -383,9 +383,9 @@ export class DatabaseStorage implements IStorage {
     const patients = patientIds.length > 0 
       ? await db.select().from(users).where(
           and(
-            eq(users.role, UserRole.PATIENT),
+            eq(users.role, "patient"),
             // Fetch all patients and filter them in memory
-            eq(users.role, UserRole.PATIENT)
+            eq(users.role, "patient")
           )
         ).then(allPatients => allPatients.filter(patient => patientIds.includes(patient.id)))
       : [];
@@ -565,7 +565,7 @@ export class MemStorage implements IStorage {
       password: 'password', // Note: Will be hashed by auth.ts
       fullName: 'System Administrator',
       email: 'admin@medivault.com',
-      role: UserRole.ADMIN
+      role: "admin"
     });
   }
 
@@ -652,7 +652,7 @@ export class MemStorage implements IStorage {
     const id = this.userIdCounter++;
     const createdAt = new Date();
     // Ensure role is always set
-    const role = insertUser.role || UserRole.PATIENT;
+    const role = insertUser.role || "patient";
     // Ensure specialty is set to null if not provided
     const specialty = insertUser.specialty === undefined ? null : insertUser.specialty;
     
@@ -759,7 +759,7 @@ export class MemStorage implements IStorage {
   async getDoctors(): Promise<User[]> {
     // Get all doctors from the map
     const doctorList = Array.from(this.usersMap.values()).filter(
-      (user) => user.role === UserRole.DOCTOR
+      (user) => (user.role as string) === "doctor"
     );
     
     // Process each doctor to have proper notification preferences
@@ -846,7 +846,7 @@ export class MemStorage implements IStorage {
     // Enrich with doctor info
     const doctorIds = [...new Set(requests.map(req => req.doctorId))];
     const rawDoctors = Array.from(this.usersMap.values())
-      .filter(user => user.role === UserRole.DOCTOR && doctorIds.includes(user.id));
+      .filter(user => (user.role as string) === "doctor" && doctorIds.includes(user.id));
     
     // Process notification preferences for each doctor
     const doctors = rawDoctors.map(doctor => {
@@ -885,7 +885,7 @@ export class MemStorage implements IStorage {
     // Enrich with patient info
     const patientIds = [...new Set(requests.map(req => req.patientId))];
     const rawPatients = Array.from(this.usersMap.values())
-      .filter(user => user.role === UserRole.PATIENT && patientIds.includes(user.id));
+      .filter(user => (user.role as string) === "patient" && patientIds.includes(user.id));
     
     // Process notification preferences for each patient
     const patients = rawPatients.map(patient => {
