@@ -413,7 +413,7 @@ Verified: ${record.verified ? "Yes" : "No"}
       const user = req.user;
       
       // Only doctors can create access requests
-      if (user.role !== UserRole.DOCTOR) {
+      if ((user.role as string) !== 'doctor') {
         return res.status(403).json({ message: "Only doctors can request access" });
       }
       
@@ -424,7 +424,7 @@ Verified: ${record.verified ? "Yes" : "No"}
       
       // Check if patient exists
       const patient = await storage.getUser(requestData.patientId);
-      if (!patient || patient.role !== UserRole.PATIENT) {
+      if (!patient || (patient.role as string) !== 'patient') {
         return res.status(404).json({ message: "Patient not found" });
       }
       
@@ -469,8 +469,8 @@ Verified: ${record.verified ? "Yes" : "No"}
     // Verify permissions: patient can only update their own requests,
     // doctor can only update requests they made, admin can update any
     if (
-      (user.role === UserRole.PATIENT && accessRequest.patientId !== user.id) ||
-      (user.role === UserRole.DOCTOR && accessRequest.doctorId !== user.id)
+      ((user.role as string) === 'patient' && accessRequest.patientId !== user.id) ||
+      ((user.role as string) === 'doctor' && accessRequest.doctorId !== user.id)
     ) {
       // Admin role is excluded from this check (admins can update any)
       if (user.role as string !== 'admin') {
@@ -535,7 +535,7 @@ Verified: ${record.verified ? "Yes" : "No"}
     const user = req.user;
     
     // Users can only view their own logs, admins can view any
-    if (user.role !== 'admin' && userId !== user.id) {
+    if ((user.role as string) !== 'admin' && userId !== user.id) {
       return res.status(403).json({ message: "Access denied" });
     }
     
@@ -555,7 +555,7 @@ Verified: ${record.verified ? "Yes" : "No"}
       const user = req.user;
       
       // Users can only update their own profile, admins can update any
-      if (user.role !== 'admin' && userId !== user.id) {
+      if ((user.role as string) !== 'admin' && userId !== user.id) {
         return res.status(403).json({ message: "Access denied" });
       }
   
@@ -616,7 +616,7 @@ Verified: ${record.verified ? "Yes" : "No"}
       const user = req.user;
       
       // Users can only change their own password, admins can force change
-      if (user.role !== 'admin' && userId !== user.id) {
+      if ((user.role as string) !== 'admin' && userId !== user.id) {
         return res.status(403).json({ message: "Access denied" });
       }
   
@@ -627,7 +627,7 @@ Verified: ${record.verified ? "Yes" : "No"}
       }
   
       // For regular users, verify current password
-      if (userId === user.id && user.role !== 'admin') {
+      if (userId === user.id && (user.role as string) !== 'admin') {
         if (!currentPassword) {
           return res.status(400).json({ message: "Current password is required" });
         }
