@@ -41,6 +41,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
   specialty: true,
   phone: true,
+  notificationPreferences: true,
 });
 
 // Records table

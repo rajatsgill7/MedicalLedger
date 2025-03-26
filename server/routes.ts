@@ -9,6 +9,14 @@ import {
   UserRole 
 } from "@shared/schema";
 
+// Type guard to ensure req.user is defined
+// This helps TypeScript understand that req.user is not undefined after calling this function
+function ensureAuthenticated(req: Request): asserts req is Request & { user: Express.User } {
+  if (!req.isAuthenticated() || !req.user) {
+    throw new Error("User is not authenticated");
+  }
+}
+
 // Middleware to check if user is authenticated
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
   if (req.isAuthenticated()) {
@@ -20,15 +28,17 @@ const isAuthenticated = (req: Request, res: Response, next: Function) => {
 // Middleware to check user role
 const hasRole = (roles: string[]) => {
   return (req: Request, res: Response, next: Function) => {
-    if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+    try {
+      ensureAuthenticated(req);
+      
+      if (roles.includes(req.user.role)) {
+        return next();
+      }
+      
+      res.status(403).json({ message: "Forbidden" });
+    } catch (e) {
+      res.status(401).json({ message: "Unauthorized" });
     }
-    
-    if (roles.includes(req.user.role)) {
-      return next();
-    }
-    
-    res.status(403).json({ message: "Forbidden" });
   };
 };
 
@@ -51,27 +61,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Invalid user ID" });
     }
     
-    const user = req.user;
+    try {
+      ensureAuthenticated(req);
+      const user = req.user;
     
-    // Users can only access their own data unless they're a doctor accessing patient data 
-    // or an admin who can access any user data
-    if (
-      userId !== user.id && 
-      !(user.role === UserRole.DOCTOR && await storage.hasAccess(user.id, userId)) &&
-      user.role !== UserRole.ADMIN
-    ) {
-      return res.status(403).json({ message: "Access denied" });
+      // Users can only access their own data unless they're a doctor accessing patient data 
+      // or an admin who can access any user data
+      if (
+        userId !== user.id && 
+        !(user.role === UserRole.DOCTOR && await storage.hasAccess(user.id, userId)) &&
+        user.role !== UserRole.ADMIN
+      ) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const userData = await storage.getUser(userId);
+      if (!userData) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Remove password from the response
+      const { password, ...userWithoutPassword } = userData;
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error retrieving user:", error);
+      res.status(500).json({ message: "Server error" });
     }
-    
-    const userData = await storage.getUser(userId);
-    if (!userData) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    
-    // Remove password from the response
-    const { password, ...userWithoutPassword } = userData;
-    
-    res.json(userWithoutPassword);
   });
   
   app.get('/api/doctors', isAuthenticated, async (req, res) => {
@@ -630,12 +646,33 @@ Verified: ${record.verified ? "Yes" : "No"}
     });
 
     try {
+      ensureAuthenticated(req);
       const validatedData = notificationSchema.parse(req.body);
+      const user = req.user;
       
-      // For now, we'll just add these to the user's notificationPreferences object
-      // In a real implementation, this would update notification settings in a separate table
+      // Get the current user to retrieve existing notification preferences
+      const currentUser = await storage.getUser(userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Merge with existing notification preferences
+      const existingPrefs = currentUser.notificationPreferences || {
+        emailNotifications: true,
+        smsNotifications: false,
+        accessRequestAlerts: true,
+        securityAlerts: true
+      };
+      
+      // Merge the validated data with existing preferences
+      const mergedPrefs = {
+        ...existingPrefs,
+        ...validatedData
+      };
+      
+      // Convert the merged preferences to a JSON string before saving
       const updatedUser = await storage.updateUser(userId, { 
-        notificationPreferences: validatedData 
+        notificationPreferences: JSON.stringify(mergedPrefs)
       });
       
       if (!updatedUser) {
