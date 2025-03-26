@@ -19,6 +19,33 @@ export type NotificationPreferences = {
   securityAlerts?: boolean;
 };
 
+// Function to convert notification preferences to a JSON string
+export function notificationPrefsToString(prefs: NotificationPreferences): string {
+  return JSON.stringify(prefs);
+}
+
+// Function to parse notification preferences from a string
+export function parseNotificationPrefs(prefsStr: string | null): NotificationPreferences {
+  const defaultPrefs: NotificationPreferences = {
+    emailNotifications: true,
+    smsNotifications: false,
+    accessRequestAlerts: true,
+    securityAlerts: true
+  };
+  
+  if (!prefsStr) return defaultPrefs;
+  
+  try {
+    return {
+      ...defaultPrefs,
+      ...JSON.parse(prefsStr)
+    };
+  } catch (e) {
+    console.error('Error parsing notification preferences:', e);
+    return defaultPrefs;
+  }
+}
+
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -41,6 +68,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
   specialty: true,
   phone: true,
+  notificationPreferences: true,
 });
 
 // Records table
