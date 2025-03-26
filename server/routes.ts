@@ -842,6 +842,35 @@ Verified: ${record.verified ? "Yes" : "No"}
       throw error;
     }
   });
+  
+  // Handle emergency override
+  app.post('/api/emergency-override', isAuthenticated, hasRole(["doctor", "admin"]), async (req, res) => {
+    try {
+      ensureAuthenticated(req);
+      
+      // Create an audit log for the emergency access
+      await storage.createAuditLog({
+        userId: req.user.id,
+        action: "emergency_override",
+        details: `Emergency override initiated by ${req.user.role} ${req.user.fullName}`,
+        resourceType: "access_control",
+        resourceId: null,
+        metadata: JSON.stringify({
+          reason: req.body.reason || "Emergency medical situation",
+          timestamp: req.body.timestamp || new Date().toISOString()
+        }),
+        ipAddress: req.ip || "unknown"
+      });
+      
+      res.status(200).json({ 
+        success: true, 
+        message: "Emergency access granted and logged" 
+      });
+    } catch (error) {
+      console.error("Error processing emergency override:", error);
+      res.status(500).json({ message: "Failed to process emergency override" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

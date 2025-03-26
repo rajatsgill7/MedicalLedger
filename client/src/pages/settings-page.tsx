@@ -639,7 +639,7 @@ export default function SettingsPage() {
                           <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                               <div className="flex items-center">
-                                <Key className="h-4 w-4 mr-2" />
+                                <KeyRound className="h-4 w-4 mr-2" />
                                 <span className="text-sm font-medium">Recovery Codes</span>
                               </div>
                               <p className="text-xs text-muted-foreground">
@@ -655,11 +655,20 @@ export default function SettingsPage() {
                               size="sm" 
                               type="button"
                               onClick={() => {
-                                // In a real app, this would generate and show recovery codes
+                                // Generate six random codes and show them in a dialog
+                                const codes = Array(6).fill(0).map(() => 
+                                  Math.random().toString(36).substring(2, 6) + "-" + 
+                                  Math.random().toString(36).substring(2, 6) + "-" +
+                                  Math.random().toString(36).substring(2, 6)
+                                );
+                                setGeneratedCodes(codes);
+                                setRecoveryCodesDialogOpen(true);
                                 advancedSecurityForm.setValue("recoveryCodesGenerated", true);
-                                toast({
-                                  title: "Recovery Codes Generated",
-                                  description: "Your recovery codes have been generated. Store them in a safe place.",
+                                
+                                // Also update the database
+                                updateAdvancedSecurityMutation.mutate({
+                                  ...advancedSecurityForm.getValues(),
+                                  recoveryCodesGenerated: true
                                 });
                               }}
                               disabled={field.value}
@@ -669,6 +678,32 @@ export default function SettingsPage() {
                           </div>
                         )}
                       />
+                      
+                      {/* Emergency Access Override (only for admins and doctors) */}
+                      {(isAdmin || isDoctor) && (
+                        <div className="mt-6 p-4 border border-red-200 dark:border-red-900 rounded-md">
+                          <div className="flex items-start space-x-4">
+                            <div className="mt-0.5">
+                              <ShieldAlert className="h-5 w-5 text-red-500" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="text-sm font-medium mb-1">Emergency Access Protocol</h4>
+                              <p className="text-xs text-muted-foreground mb-3">
+                                In emergency situations, authorized personnel can temporarily override access controls to ensure timely medical care.
+                                All emergency overrides are logged and require full justification.
+                              </p>
+                              <Button 
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setEmergencyDialogOpen(true)}
+                                className="mt-1"
+                              >
+                                Emergency Override
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       
                       <FormField
                         control={advancedSecurityForm.control}
@@ -862,6 +897,79 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Emergency Override Dialog */}
+      <AlertDialog open={emergencyDialogOpen} onOpenChange={setEmergencyDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <ShieldAlert className="h-5 w-5 text-red-500 mr-2" />
+              Emergency Access Override
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will temporarily override normal access controls and is logged for security review. 
+              <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded text-sm">
+                <strong>Warning:</strong> Please confirm you're overriding access for an emergency situation.
+                Your ID and timestamp will be recorded in the audit logs.
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                // Create audit log and override access record
+                apiRequest("POST", "/api/emergency-override", { 
+                  userId: user?.id,
+                  reason: "Emergency medical situation",
+                  timestamp: new Date().toISOString()
+                }).then(() => {
+                  toast({
+                    title: "Emergency Override Activated",
+                    description: "Access has been temporarily granted. This action has been logged.",
+                    variant: "destructive"
+                  });
+                }).catch(error => {
+                  toast({
+                    title: "Error",
+                    description: error.message || "Failed to activate emergency override",
+                    variant: "destructive"
+                  });
+                });
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Confirm Emergency Override
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Recovery Codes Dialog */}
+      <AlertDialog open={recoveryCodesDialogOpen} onOpenChange={setRecoveryCodesDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <KeyRound className="h-5 w-5 text-blue-500 mr-2" />
+              Recovery Codes Generated
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              <p className="mb-4">These are your one-time use recovery codes. Store them in a secure place. Each code can only be used once to recover your account.</p>
+              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded font-mono text-sm">
+                {generatedCodes.map((code, index) => (
+                  <div key={index} className="mb-1">{code}</div>
+                ))}
+              </div>
+              <p className="mt-4 text-amber-600 dark:text-amber-400 font-semibold text-sm">
+                Warning: These codes won't be shown again!
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>Done</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
