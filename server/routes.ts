@@ -331,6 +331,8 @@ Verified: ${record.verified ? "Yes" : "No"}
       return res.status(400).json({ message: "Invalid patient ID" });
     }
     
+    // Use type guard to ensure req.user is defined
+    ensureAuthenticated(req);
     const user = req.user;
     
     // Patients can only view their own access requests
@@ -363,6 +365,8 @@ Verified: ${record.verified ? "Yes" : "No"}
       return res.status(400).json({ message: "Invalid doctor ID" });
     }
     
+    // Use type guard to ensure req.user is defined
+    ensureAuthenticated(req);
     const user = req.user;
     
     // Doctors can only view their own access requests
@@ -396,6 +400,9 @@ Verified: ${record.verified ? "Yes" : "No"}
   app.post('/api/access-requests', isAuthenticated, hasRole([UserRole.DOCTOR]), async (req, res) => {
     try {
       const requestData = insertAccessRequestSchema.parse(req.body);
+      
+      // Use type guard to ensure req.user is defined
+      ensureAuthenticated(req);
       const user = req.user;
       
       // Only doctors can create access requests
@@ -445,6 +452,8 @@ Verified: ${record.verified ? "Yes" : "No"}
       return res.status(404).json({ message: "Access request not found" });
     }
     
+    // Use type guard to ensure req.user is defined
+    ensureAuthenticated(req);
     const user = req.user;
     
     // Verify permissions: patient can only update their own requests,
@@ -508,6 +517,8 @@ Verified: ${record.verified ? "Yes" : "No"}
       return res.status(400).json({ message: "Invalid user ID" });
     }
     
+    // Use type guard to ensure req.user is defined
+    ensureAuthenticated(req);
     const user = req.user;
     
     // Users can only view their own logs, admins can view any
