@@ -132,10 +132,10 @@ export default function SettingsPage() {
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      fullName: user?.fullName || "",
-      email: user?.email || "",
-      specialty: user?.specialty || "",
-      phone: user?.phone || "",
+      fullName: user?.settings?.profile?.fullName || user?.fullName || "",
+      email: user?.settings?.profile?.email || user?.email || "",
+      specialty: user?.settings?.profile?.specialty || user?.specialty || "",
+      phone: user?.settings?.profile?.phone || user?.phone || "",
     },
   });
 
