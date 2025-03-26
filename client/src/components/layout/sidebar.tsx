@@ -114,12 +114,12 @@ export function Sidebar() {
               Medical Records
             </NavItem>
             <NavItem
-              icon={<UserCircle className="mr-3 h-5 w-5" />}
+              icon={<Shield className="mr-3 h-5 w-5" />}
               href="/settings"
               active={isLinkActive("/settings")}
               onClick={() => setLocation("/settings")}
             >
-              Profile Settings
+              Security Settings
             </NavItem>
           </div>
         )}
